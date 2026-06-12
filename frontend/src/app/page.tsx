@@ -759,13 +759,23 @@ export default function Home() {
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] text-gray-500 font-bold uppercase">Database Engine</span>
             <div className="flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${dbMode === 'MongoDB' ? 'bg-emerald-500' : 'bg-amber-400 glow-active'}`}></span>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                dbMode === 'MongoDB' 
+                  ? 'bg-emerald-500' 
+                  : dbMode === 'Vercel Sandbox' 
+                  ? 'bg-violet-500 glow-active' 
+                  : 'bg-amber-400 glow-active'
+              }`}></span>
               <span className="text-[9px] uppercase font-black text-gray-300">{dbMode}</span>
             </div>
           </div>
           <div className="text-[10px] text-gray-400 leading-normal">
             {dbMode === 'MongoDB' 
               ? 'Mongoose MongoDB cluster is connected and reading.' 
+              : dbMode === 'Vercel Sandbox'
+              ? 'Local backend unreachable. Standalone browser sandbox active (zero setup required).'
+              : dbMode === 'Detecting...'
+              ? 'Analyzing connection to CRM backend...'
               : 'MongoDB local server offline. Local JSONDB active.'
             }
           </div>
