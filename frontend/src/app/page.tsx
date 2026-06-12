@@ -651,7 +651,7 @@ export default function Home() {
               {/* 4 Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {/* Total Customers */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Customers</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -662,14 +662,14 @@ export default function Home() {
                     <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5">
                       ↗ 19 new
                     </span>
-                    <div className="bg-violet-500/10 text-violet-400 p-2.5 rounded-xl border border-violet-500/10">
+                    <div className="bg-violet-500/10 text-violet-400 p-2.5 rounded-xl border border-violet-500/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                       <Users className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
 
                 {/* Total Revenue */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Revenue</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -677,14 +677,14 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="flex flex-col items-end justify-end h-full min-h-[60px]">
-                    <div className="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl border border-emerald-500/10">
+                    <div className="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl border border-emerald-500/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                       <IndianRupee className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
 
                 {/* Campaigns Sent */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Campaigns Sent</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -695,14 +695,14 @@ export default function Home() {
                     <span className="text-[10px] text-emerald-500 font-bold">
                       ↗ —
                     </span>
-                    <div className="bg-amber-500/10 text-amber-400 p-2.5 rounded-xl border border-amber-500/10">
+                    <div className="bg-amber-500/10 text-amber-400 p-2.5 rounded-xl border border-amber-500/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                       <Megaphone className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
 
                 {/* Segments */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Segments</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -710,7 +710,7 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="flex flex-col items-end justify-end h-full min-h-[60px]">
-                    <div className="bg-pink-500/10 text-pink-400 p-2.5 rounded-xl border border-pink-500/10">
+                    <div className="bg-pink-500/10 text-pink-400 p-2.5 rounded-xl border border-pink-500/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                       <Target className="w-5 h-5" />
                     </div>
                   </div>
@@ -720,7 +720,7 @@ export default function Home() {
               {/* Row with Revenue Timeline & Top Cities */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 {/* Revenue Timeline (2/3) */}
-                <div className="lg:col-span-8 glass-panel p-5 flex flex-col justify-between">
+                <div className="lg:col-span-8 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300">
                   <div className="mb-4">
                     <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
                       Revenue Timeline
@@ -736,7 +736,7 @@ export default function Home() {
                 </div>
 
                 {/* Top Cities (1/3) */}
-                <div className="lg:col-span-4 glass-panel p-5 flex flex-col justify-between">
+                <div className="lg:col-span-4 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300">
                   <div className="mb-4">
                     <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
                       Top Cities
@@ -824,7 +824,7 @@ export default function Home() {
                 {showSuggestions && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                     {/* Coffee Winback */}
-                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:border-accent-violet/30 transition-all">
+                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:-translate-y-1 hover:border-accent-violet/45 hover:shadow-lg hover:shadow-accent-violet/5 hover:scale-[1.01] transition-all duration-300">
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-[9px] px-2 py-0.5 rounded font-black uppercase bg-emerald-950/20 text-emerald-400 border border-emerald-500/10">WhatsApp</span>
@@ -837,14 +837,14 @@ export default function Home() {
                       </div>
                       <button
                         onClick={() => applySuggestion("Target coffee buyers who spent over ₹500 but haven't ordered in 30 days.")}
-                        className="w-full bg-white/5 hover:bg-white/10 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        className="w-full bg-white/5 hover:bg-white/10 active:scale-95 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
                       >
                         Use Prompt &rarr;
                       </button>
                     </div>
 
                     {/* Sneaker VIP Drop */}
-                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:border-accent-violet/30 transition-all">
+                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:-translate-y-1 hover:border-accent-violet/45 hover:shadow-lg hover:shadow-accent-violet/5 hover:scale-[1.01] transition-all duration-300">
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-[9px] px-2 py-0.5 rounded font-black uppercase bg-accent-indigo/15 text-accent-indigo border border-accent-indigo/10">Email</span>
@@ -857,14 +857,14 @@ export default function Home() {
                       </div>
                       <button
                         onClick={() => applySuggestion("Target premium sneaker shoppers who spent above ₹5000 in our database.")}
-                        className="w-full bg-white/5 hover:bg-white/10 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        className="w-full bg-white/5 hover:bg-white/10 active:scale-95 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
                       >
                         Use Prompt &rarr;
                       </button>
                     </div>
 
                     {/* Delhi Special Offer */}
-                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:border-accent-violet/30 transition-all">
+                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:-translate-y-1 hover:border-accent-violet/45 hover:shadow-lg hover:shadow-accent-violet/5 hover:scale-[1.01] transition-all duration-300">
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-[9px] px-2 py-0.5 rounded font-black uppercase bg-violet-950/20 text-violet-400 border border-violet-500/10">SMS</span>
@@ -877,7 +877,7 @@ export default function Home() {
                       </div>
                       <button
                         onClick={() => applySuggestion("Target shoppers in Delhi who bought Filter Coffee.")}
-                        className="w-full bg-white/5 hover:bg-white/10 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        className="w-full bg-white/5 hover:bg-white/10 active:scale-95 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
                       >
                         Use Prompt &rarr;
                       </button>
