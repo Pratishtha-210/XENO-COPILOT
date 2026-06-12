@@ -180,7 +180,7 @@ body {
 }
 
 .animate-slide-in-top {
-  animation: slide-in-top 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: slide-in-top 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 
