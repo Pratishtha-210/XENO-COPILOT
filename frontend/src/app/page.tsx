@@ -668,10 +668,15 @@ export default function Home() {
   });
 
   return (
-    <div className="flex h-screen bg-bg-primary text-text-primary overflow-hidden transition-colors duration-300">
+    <div className="flex h-screen bg-bg-primary text-text-primary overflow-hidden transition-colors duration-300 relative">
+      
+      {/* Ambient background auras & grid network (web effect) */}
+      <div className="dashboard-web-grid pointer-events-none" />
+      <div className="glowing-orb orb-violet" />
+      <div className="glowing-orb orb-indigo" />
       
       {/* SIDEBAR */}
-      <aside className="w-64 border-r border-sidebar-border bg-sidebar-bg flex flex-col justify-between p-6 animate-slide-in-left">
+      <aside className="w-64 border-r border-sidebar-border bg-sidebar-bg flex flex-col justify-between p-6 animate-slide-in-left z-10">
         <div>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2.5">
@@ -768,7 +773,7 @@ export default function Home() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col overflow-hidden p-8">
+      <main className="flex-1 flex flex-col overflow-hidden p-8 z-10 relative">
         
         {/* Alerts */}
         {globalError && (
@@ -807,7 +812,7 @@ export default function Home() {
               {/* 4 Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {/* Total Customers */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-bottom">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-card-pop">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Customers</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -825,7 +830,7 @@ export default function Home() {
                 </div>
 
                 {/* Total Revenue */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-bottom delay-75">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-card-pop delay-75">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Revenue</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -840,7 +845,7 @@ export default function Home() {
                 </div>
 
                 {/* Campaigns Sent */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-bottom delay-150">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-card-pop delay-150">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Campaigns Sent</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -858,7 +863,7 @@ export default function Home() {
                 </div>
 
                 {/* Segments */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-bottom delay-200">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-card-pop delay-200">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Segments</span>
                     <span className="text-2xl font-black text-text-primary block">

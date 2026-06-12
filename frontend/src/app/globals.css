@@ -259,3 +259,96 @@ body {
   animation-delay: 700ms;
 }
 
+/* Card Pop Animation (Elastic Spring Ease) */
+@keyframes card-pop {
+  0% {
+    transform: scale(0.6) translateY(20px);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.05) translateY(-4px);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-card-pop {
+  animation: card-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Glowing Ambient Floating Orbs */
+@keyframes float-orb-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(40px, -60px) scale(1.12);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.92);
+  }
+}
+
+@keyframes float-orb-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1.05);
+  }
+  50% {
+    transform: translate(-50px, 50px) scale(0.88);
+  }
+}
+
+.glowing-orb {
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.5s ease;
+}
+
+:root[data-theme="light"] .glowing-orb {
+  opacity: 0.05;
+}
+
+.orb-violet {
+  background: radial-gradient(circle, var(--accent-violet) 0%, transparent 70%);
+  top: 15%;
+  left: 25%;
+  animation: float-orb-1 16s infinite ease-in-out;
+}
+
+.orb-indigo {
+  background: radial-gradient(circle, var(--accent-indigo) 0%, transparent 70%);
+  bottom: 20%;
+  right: 20%;
+  animation: float-orb-2 20s infinite ease-in-out;
+}
+
+/* Subtle Data Web Grid overlay */
+.dashboard-web-grid {
+  position: absolute;
+  inset: 0;
+  background-size: 36px 36px;
+  background-image: 
+    linear-gradient(to right, rgba(99, 102, 241, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.02) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 90%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+:root[data-theme="light"] .dashboard-web-grid {
+  background-image: 
+    linear-gradient(to right, rgba(79, 70, 229, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(79, 70, 229, 0.015) 1px, transparent 1px);
+}
+
+
