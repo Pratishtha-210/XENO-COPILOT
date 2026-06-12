@@ -1,5 +1,7 @@
 # Xeno AI Campaign Copilot CRM
 
+Live Link : https://frontend-eight-vert-45.vercel.app/
+
 An AI-native Marketing Engagement CRM and Shopper Segmentation platform built for the Xeno Engineering Internship Assignment 2026. This platform allows marketers to describe business goals in natural language, automatically parses segments, drafts personalized messages, and runs message delivery simulations using an asynchronous channel service callback loop.
 
 ---
