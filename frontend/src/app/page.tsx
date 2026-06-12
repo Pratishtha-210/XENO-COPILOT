@@ -24,15 +24,171 @@ import {
   IndianRupee,
   Plus,
   Trash2,
-  FileText
+  FileText,
+  MoreVertical
 } from 'lucide-react';
 import { api, Customer, Campaign, CampaignLog, DashboardAnalytics, Segment } from '../lib/api';
 
 type TabType = 'dashboard' | 'campaigns' | 'segments' | 'audience';
 
+interface LocationItem {
+  id: string;
+  name: string;
+  percentage: number;
+  count: number;
+  flag: string;
+  cx: number;
+  cy: number;
+}
+
+// Custom World Map & Locations Component
+const TopLocationsCard = () => {
+  const [hoveredLoc, setHoveredLoc] = useState<string | null>(null);
+
+  const locations: LocationItem[] = [
+    { id: 'australia', name: 'Australia', percentage: 48, count: 48, flag: '🇦🇺', cx: 215, cy: 92 },
+    { id: 'india', name: 'India', percentage: 30, count: 30, flag: '🇮🇳', cx: 162, cy: 56 },
+    { id: 'indonesia', name: 'Indonesia', percentage: 15, count: 15, flag: '🇮🇩', cx: 178, cy: 78 },
+    { id: 'singapore', name: 'Singapore', percentage: 7, count: 7, flag: '🇸🇬', cx: 172, cy: 73 }
+  ];
+
+  return (
+    <div className="flex flex-col h-full justify-between gap-4">
+      {/* SVG Map */}
+      <div className="relative flex items-center justify-center py-2 bg-black/5 dark:bg-black/20 rounded-xl border border-card-border/40 p-2 overflow-hidden group">
+        <svg viewBox="0 0 260 120" className="w-full h-auto select-none overflow-visible opacity-90 transition-transform duration-500 group-hover:scale-[1.02]">
+          {/* Stylized World Map Path */}
+          {/* North America */}
+          <path 
+            d="M16 22 L40 20 L58 30 L48 48 L42 50 L34 58 L32 54 L22 52 L20 40 Z" 
+            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+          />
+          {/* Greenland */}
+          <path 
+            d="M58 8 L68 10 L66 18 L60 16 Z" 
+            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+          />
+          {/* South America */}
+          <path 
+            d="M34 58 L42 60 L38 68 L46 78 L44 95 L40 108 L36 104 L32 80 L28 66 Z" 
+            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+          />
+          {/* Africa */}
+          <path 
+            d="M90 54 L108 52 L118 58 L124 64 L128 76 L122 88 L116 96 L110 92 L106 82 L102 70 L92 64 Z" 
+            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+          />
+          {/* Europe */}
+          <path 
+            d="M82 26 L98 24 L104 34 L100 44 L90 46 L86 40 Z" 
+            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+          />
+          {/* Asia */}
+          <path 
+            d="M98 24 L145 22 L165 30 L170 48 L160 58 L148 60 L142 54 L132 56 L124 52 L116 54 L106 44 L104 38 Z" 
+            className={`transition-colors duration-300 stroke-none ${
+              hoveredLoc === 'india' || hoveredLoc === 'singapore' || hoveredLoc === 'indonesia'
+                ? 'fill-accent-violet/10 dark:fill-accent-violet/15' 
+                : 'fill-text-tertiary/10 dark:fill-white/5'
+            }`}
+          />
+          {/* Australia & Oceania */}
+          <path 
+            d="M196 85 L218 85 L222 96 L212 104 L196 98 Z" 
+            className={`transition-colors duration-300 stroke-none ${
+              hoveredLoc === 'australia' ? 'fill-sky-500/20 dark:fill-sky-400/20' : 'fill-text-tertiary/10 dark:fill-white/5'
+            }`} 
+          />
+
+          {/* Glowing markers for pins */}
+          {locations.map((loc) => {
+            const isHovered = hoveredLoc === loc.id;
+            return (
+              <g 
+                key={loc.id} 
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredLoc(loc.id)}
+                onMouseLeave={() => setHoveredLoc(null)}
+              >
+                {/* Outer pulsing ping circle */}
+                <circle 
+                  cx={loc.cx} 
+                  cy={loc.cy} 
+                  r={isHovered ? 11 : 6} 
+                  className={`transition-all duration-300 opacity-60 ${
+                    loc.id === 'australia' ? 'fill-sky-400' : 
+                    loc.id === 'indonesia' ? 'fill-emerald-400' : 
+                    loc.id === 'singapore' ? 'fill-violet-400' : 'fill-amber-400'
+                  } ${isHovered ? 'animate-ping' : 'animate-pulse'}`} 
+                />
+                {/* Core solid dot */}
+                <circle 
+                  cx={loc.cx} 
+                  cy={loc.cy} 
+                  r={isHovered ? 4 : 2.5} 
+                  className={`transition-all duration-300 ${
+                    loc.id === 'australia' ? 'fill-sky-500' : 
+                    loc.id === 'indonesia' ? 'fill-emerald-500' : 
+                    loc.id === 'singapore' ? 'fill-violet-500' : 'fill-amber-500'
+                  }`} 
+                />
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* List below map */}
+      <div className="space-y-1.5 flex-1 flex flex-col justify-center">
+        {locations.map((loc, idx) => {
+          const isHovered = hoveredLoc === loc.id;
+          return (
+            <div 
+              key={loc.id}
+              onMouseEnter={() => setHoveredLoc(loc.id)}
+              onMouseLeave={() => setHoveredLoc(null)}
+              className={`flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-300 cursor-pointer ${
+                isHovered 
+                  ? 'bg-accent-violet/5 dark:bg-white/[0.04] border-accent-violet/20 translate-x-1 hover:shadow-md' 
+                  : 'bg-transparent border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-[10px] text-text-tertiary">{idx + 1}.</span>
+                <span className="text-sm leading-none select-none">{loc.flag}</span>
+                <span className={`text-xs font-bold transition-colors ${
+                  isHovered ? 'text-text-primary' : 'text-text-secondary'
+                }`}>
+                  {loc.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-text-tertiary font-medium">
+                  {loc.count}%
+                </span>
+                <div className="w-12 h-1 bg-white/[0.04] rounded-full overflow-hidden shrink-0">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      loc.id === 'australia' ? 'bg-sky-500' : 
+                      loc.id === 'indonesia' ? 'bg-emerald-500' : 
+                      loc.id === 'singapore' ? 'bg-violet-500' : 'bg-amber-500'
+                    }`}
+                    style={{ width: `${loc.percentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // Custom SVG Chart component
 const RevenueChart = ({ data }: { data: Array<{ month: string; revenue: number }> }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   
   if (!data || data.length === 0) return <div className="text-center py-10 text-xs text-text-tertiary">No data available</div>;
 
@@ -64,7 +220,7 @@ const RevenueChart = ({ data }: { data: Array<{ month: string; revenue: number }
   }
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full animate-graph-slide-in">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto select-none overflow-visible">
         {ticks.map((tick, idx) => {
           const y = getY(tick);
@@ -116,7 +272,7 @@ const RevenueChart = ({ data }: { data: Array<{ month: string; revenue: number }
                 y={y}
                 width={barWidth}
                 height={Math.max(barHeight, 4)}
-                className="fill-accent-indigo hover:fill-accent-violet transition-colors duration-200"
+                className="fill-accent-indigo hover:fill-accent-violet transition-all duration-300 origin-bottom hover:scale-y-[1.03] hover:-translate-y-0.5"
                 rx={4}
               />
             </g>
@@ -515,7 +671,7 @@ export default function Home() {
     <div className="flex h-screen bg-bg-primary text-text-primary overflow-hidden transition-colors duration-300">
       
       {/* SIDEBAR */}
-      <aside className="w-64 border-r border-sidebar-border bg-sidebar-bg flex flex-col justify-between p-6">
+      <aside className="w-64 border-r border-sidebar-border bg-sidebar-bg flex flex-col justify-between p-6 animate-slide-in-left">
         <div>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2.5">
@@ -639,7 +795,7 @@ export default function Home() {
           {activeTab === 'dashboard' && (
             <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-1">
               {/* Header */}
-              <div>
+              <div className="animate-slide-in-bottom">
                 <h2 className="text-2xl font-bold tracking-tight text-gradient">
                   Dashboard
                 </h2>
@@ -651,7 +807,7 @@ export default function Home() {
               {/* 4 Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {/* Total Customers */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-bottom">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Customers</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -659,7 +815,7 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="flex flex-col items-end justify-between h-full min-h-[60px]">
-                    <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5">
+                    <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5 animate-pulse">
                       ↗ 19 new
                     </span>
                     <div className="bg-violet-500/10 text-violet-400 p-2.5 rounded-xl border border-violet-500/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
@@ -669,7 +825,7 @@ export default function Home() {
                 </div>
 
                 {/* Total Revenue */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-bottom delay-75">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Revenue</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -684,7 +840,7 @@ export default function Home() {
                 </div>
 
                 {/* Campaigns Sent */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-bottom delay-150">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Campaigns Sent</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -702,7 +858,7 @@ export default function Home() {
                 </div>
 
                 {/* Segments */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-bottom delay-200">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Segments</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -720,7 +876,7 @@ export default function Home() {
               {/* Row with Revenue Timeline & Top Cities */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 {/* Revenue Timeline (2/3) */}
-                <div className="lg:col-span-8 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300">
+                <div className="lg:col-span-8 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300 animate-slide-in-bottom delay-300">
                   <div className="mb-4">
                     <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
                       Revenue Timeline
@@ -735,58 +891,24 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Top Cities (1/3) */}
-                <div className="lg:col-span-4 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300">
-                  <div className="mb-4">
+                {/* Top Customer Locations (1/3) */}
+                <div className="lg:col-span-4 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300 animate-slide-in-bottom delay-400">
+                  <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
-                      Top Cities
+                      Top Customer Locations
                     </h3>
+                    <button className="text-text-secondary hover:text-text-primary p-1 rounded-lg hover:bg-white/5 transition-all">
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
                   </div>
                   <div className="flex-1 flex flex-col justify-center">
-                    <div className="space-y-4">
-                      {(dashboardStats?.topCities || [
-                        { city: 'Bangalore', count: 24 },
-                        { city: 'Hyderabad', count: 17 },
-                        { city: 'Lucknow', count: 15 },
-                        { city: 'Chandigarh', count: 15 },
-                        { city: 'Delhi', count: 15 }
-                      ]).slice(0, 5).map((cityItem, idx) => {
-                        const colors = [
-                          'bg-indigo-500',
-                          'bg-sky-500',
-                          'bg-violet-400',
-                          'bg-purple-300',
-                          'bg-blue-200'
-                        ];
-                        const colorClass = colors[idx % colors.length];
-                        const maxCount = Math.max(...(dashboardStats?.topCities?.map(c => c.count) || [24]), 1);
-                        const percentage = (cityItem.count / maxCount) * 100;
-
-                        return (
-                          <div key={cityItem.city} className="space-y-1.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${colorClass}`}></span>
-                                <span className="font-bold text-text-primary">{cityItem.city}</span>
-                              </div>
-                              <span className="font-bold text-text-primary">{cityItem.count}</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${colorClass}`}
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <TopLocationsCard />
                   </div>
                 </div>
               </div>
 
               {/* Bottom Section: AI Campaign Suggestions */}
-              <div className="glass-panel p-5 space-y-4">
+              <div className="glass-panel p-5 space-y-4 animate-slide-in-bottom delay-500">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="bg-violet-500/10 text-violet-400 p-2 rounded-lg mt-0.5 animate-pulse">
@@ -890,7 +1012,7 @@ export default function Home() {
 
           {/* TAB: CAMPAIGNS */}
           {activeTab === 'campaigns' && (
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden animate-slide-in-bottom">
               
               {selectedCampaign ? (
                 /* DETAILED CAMPAIGN TRACKER (WEBHOOK SIMULATOR PROGRESS) */
@@ -1382,7 +1504,7 @@ export default function Home() {
 
           {/* TAB: SEGMENTS */}
           {activeTab === 'segments' && (
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden animate-slide-in-bottom">
               
               {showSegmentBuilder ? (
                 /* SEGMENT CREATION FORM */
@@ -1621,7 +1743,7 @@ export default function Home() {
 
           {/* TAB 3: AUDIENCE BASE */}
           {activeTab === 'audience' && (
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden animate-slide-in-bottom">
               
               {/* Header section */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
