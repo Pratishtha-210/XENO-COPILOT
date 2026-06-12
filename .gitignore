@@ -7,7 +7,7 @@ frontend/out/
 
 # TypeScript compiler build output
 backend/crm-core/dist/
-channel-service/dist/
+channel/dist/
 
 # Local Environment Variables and Secrets
 .env

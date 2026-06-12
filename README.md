@@ -36,8 +36,8 @@ XENO/
 │       ├── src/db/connection.ts    # Mongoose schemas & JSON DB Repository
 │       ├── src/services/aiService  # Gemini Live & Local Mock AI Parser
 │       └── src/routes/api.ts       # REST Ingestion, Campaigns & Callback routes
-├── channel-service/                # Channel Simulator Service (Port 5001)
-│   └── src/index.ts                # Delayed callback loops mimicking brokers
+├── channel/                        # Channel Simulator Service (Port 5001)
+│   └── server.js                   # Delayed callback loops mimicking brokers
 └── frontend/                       # Next.js 16 Client App (Port 3000)
     ├── src/app/page.tsx            # Main tabbed workspace layout
     ├── src/lib/api.ts              # API HTTP contracts
@@ -57,7 +57,7 @@ GEMINI_API_KEY=
 SIMULATOR_URL=http://localhost:5001
 ```
 
-Create a `.env` file inside `channel-service`:
+Create a `.env` file inside `channel`:
 ```env
 PORT=5001
 ```
@@ -67,7 +67,7 @@ Launch each service in a separate terminal:
 
 **Terminal 1: Channel Simulator**
 ```bash
-cd channel-service
+cd channel
 npm install
 npm run dev
 ```
