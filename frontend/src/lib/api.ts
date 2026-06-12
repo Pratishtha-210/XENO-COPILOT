@@ -5,6 +5,7 @@ export interface Customer {
   name: string;
   email: string;
   phone: string;
+  city: string;
   totalSpend: number;
   lastOrderDate: string | null;
   createdAt: string;
@@ -18,6 +19,15 @@ export interface Order {
   price: number;
   quantity: number;
   orderDate: string;
+}
+
+export interface Segment {
+  _id: string;
+  name: string;
+  description: string;
+  audienceCriteria: any;
+  audienceSize: number;
+  createdAt: string;
 }
 
 export interface Campaign {
@@ -55,8 +65,10 @@ export interface CampaignLog {
 export interface DashboardAnalytics {
   customerCount: number;
   campaignCount: number;
-  activeCampaigns: number;
-  completedCampaigns: number;
+  segmentCount: number;
+  totalRevenue: number;
+  revenueTimeline: Array<{ month: string; revenue: number }>;
+  topCities: Array<{ city: string; count: number }>;
   metrics: {
     sent: number;
     delivered: number;
@@ -105,6 +117,24 @@ export const api = {
     return res.json();
   },
 
+  // Segments Endpoints
+  getSegments: async (): Promise<Segment[]> => {
+    const res = await fetch(`${BASE_URL}/segments`);
+    if (!res.ok) throw new Error('Failed to fetch segments');
+    return res.json();
+  },
+
+  createSegment: async (segmentData: Partial<Segment>): Promise<Segment> => {
+    const res = await fetch(`${BASE_URL}/segments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(segmentData),
+    });
+    if (!res.ok) throw new Error('Failed to create segment');
+    return res.json();
+  },
+
+  // Campaign Endpoints
   createCampaign: async (campaignData: Partial<Campaign>): Promise<Campaign> => {
     const res = await fetch(`${BASE_URL}/campaigns`, {
       method: 'POST',
@@ -115,7 +145,7 @@ export const api = {
     return res.json();
   },
 
-  sendCampaign: async (id: string): Promise<{ message: string; audienceSize: number }> => {
+  sendCampaign: async (id: string): Promise<{ message: string; audienceSize: number; warning?: string }> => {
     const res = await fetch(`${BASE_URL}/campaigns/${id}/send`, {
       method: 'POST',
     });

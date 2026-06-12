@@ -18,14 +18,148 @@ import {
   Search,
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  Megaphone,
+  Target,
+  IndianRupee,
+  Plus,
+  Trash2,
+  FileText
 } from 'lucide-react';
-import { api, Customer, Campaign, CampaignLog, DashboardAnalytics } from '../lib/api';
+import { api, Customer, Campaign, CampaignLog, DashboardAnalytics, Segment } from '../lib/api';
 
-type TabType = 'copilot' | 'hub' | 'audience';
+type TabType = 'dashboard' | 'campaigns' | 'segments' | 'audience';
+
+// Custom SVG Chart component
+const RevenueChart = ({ data }: { data: Array<{ month: string; revenue: number }> }) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  
+  if (!data || data.length === 0) return <div className="text-center py-10 text-xs text-text-tertiary">No data available</div>;
+
+  const maxVal = Math.max(...data.map(d => d.revenue), 800000);
+  const yMax = Math.ceil(maxVal / 200000) * 200000;
+  
+  const width = 500;
+  const height = 220;
+  const paddingLeft = 55;
+  const paddingRight = 10;
+  const paddingTop = 20;
+  const paddingBottom = 30;
+  
+  const chartWidth = width - paddingLeft - paddingRight;
+  const chartHeight = height - paddingTop - paddingBottom;
+  
+  const getY = (val: number) => {
+    return paddingTop + chartHeight - (val / yMax) * chartHeight;
+  };
+  
+  const colWidth = chartWidth / data.length;
+  const barWidth = Math.min(colWidth * 0.5, 36);
+
+  const ticks = [];
+  const tickCount = 5;
+  for (let i = 0; i < tickCount; i++) {
+    const val = (yMax / (tickCount - 1)) * i;
+    ticks.push(val);
+  }
+
+  return (
+    <div className="relative w-full">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto select-none overflow-visible">
+        {ticks.map((tick, idx) => {
+          const y = getY(tick);
+          return (
+            <g key={idx}>
+              <line 
+                x1={paddingLeft} 
+                y1={y} 
+                x2={width - paddingRight} 
+                y2={y} 
+                className="stroke-card-border" 
+                strokeDasharray="4 4"
+                strokeWidth={1}
+              />
+              <text 
+                x={paddingLeft - 8} 
+                y={y + 4} 
+                textAnchor="end" 
+                className="fill-text-tertiary font-mono text-[9px]"
+              >
+                ₹{(tick / 1000).toFixed(0)}K
+              </text>
+            </g>
+          );
+        })}
+        
+        {data.map((item, idx) => {
+          const barHeight = (item.revenue / yMax) * chartHeight;
+          const x = paddingLeft + idx * colWidth + (colWidth - barWidth) / 2;
+          const y = getY(item.revenue);
+          
+          return (
+            <g 
+              key={idx}
+              onMouseEnter={() => setHoveredIndex(idx)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              className="cursor-pointer"
+            >
+              <rect
+                x={paddingLeft + idx * colWidth + 4}
+                y={paddingTop}
+                width={colWidth - 8}
+                height={chartHeight}
+                className="fill-transparent hover:fill-white/[0.02] transition-colors duration-200"
+                rx={4}
+              />
+              <rect
+                x={x}
+                y={y}
+                width={barWidth}
+                height={Math.max(barHeight, 4)}
+                className="fill-accent-indigo hover:fill-accent-violet transition-colors duration-200"
+                rx={4}
+              />
+            </g>
+          );
+        })}
+        
+        {data.map((item, idx) => {
+          const x = paddingLeft + idx * colWidth + colWidth / 2;
+          const y = height - paddingBottom + 16;
+          
+          return (
+            <text
+              key={idx}
+              x={x}
+              y={y}
+              textAnchor="middle"
+              className="fill-text-secondary text-[9px] font-semibold"
+            >
+              {item.month}
+            </text>
+          );
+        })}
+      </svg>
+      
+      {hoveredIndex !== null && (
+        <div 
+          className="absolute z-10 bg-sidebar-bg border border-card-border p-2 rounded-lg shadow-xl text-[10px] pointer-events-none transition-all duration-100"
+          style={{
+            left: `${(paddingLeft + hoveredIndex * colWidth + colWidth / 2) / width * 100}%`,
+            top: `${(getY(data[hoveredIndex].revenue) - 35) / height * 100}%`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="font-bold text-text-primary">{data[hoveredIndex].month}</div>
+          <div className="text-accent-indigo font-semibold">₹{data[hoveredIndex].revenue.toLocaleString('en-IN')}</div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<TabType>('copilot');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [dbMode, setDbMode] = useState<string>('Detecting...');
   
@@ -48,6 +182,23 @@ export default function Home() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [campaignLogs, setCampaignLogs] = useState<CampaignLog[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardAnalytics | null>(null);
+  const [segments, setSegments] = useState<Segment[]>([]);
+
+  // Sub-navigation toggles
+  const [showCampaignBuilder, setShowCampaignBuilder] = useState(false);
+  const [showSegmentBuilder, setShowSegmentBuilder] = useState(false);
+
+  // AI Suggestions
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
+
+  // Segment creation inputs
+  const [newSegmentName, setNewSegmentName] = useState('');
+  const [newSegmentDesc, setNewSegmentDesc] = useState('');
+  const [newSegmentSpendMin, setNewSegmentSpendMin] = useState<string>('');
+  const [newSegmentLastOrderDays, setNewSegmentLastOrderDays] = useState<string>('');
+  const [newSegmentProduct, setNewSegmentProduct] = useState('');
+  const [isCreatingSegment, setIsCreatingSegment] = useState(false);
   
   // Loading & error alerts
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -155,6 +306,8 @@ export default function Home() {
       setDashboardStats(stats);
       const campList = await api.getCampaigns();
       setCampaigns(campList);
+      const segmentsList = await api.getSegments();
+      setSegments(segmentsList);
       
       // Update selected campaign reference if it's currently open
       if (selectedCampaign) {
@@ -258,7 +411,7 @@ export default function Home() {
         const freshCamp = list.find(c => c._id === created._id);
         setSelectedCampaign(freshCamp || created);
         setCampaignLogs([]);
-        setActiveTab('hub');
+        setActiveTab('campaigns');
         setAiResult(null);
         setAiPrompt('');
       } else {
@@ -268,7 +421,7 @@ export default function Home() {
         // 3. Open campaign details
         setSelectedCampaign(created);
         setCampaignLogs([]);
-        setActiveTab('hub');
+        setActiveTab('campaigns');
         setAiResult(null);
         setAiPrompt('');
       }
@@ -279,6 +432,74 @@ export default function Home() {
 
   const selectQuickPreset = (presetText: string) => {
     setAiPrompt(presetText);
+  };
+
+  const applySuggestion = (promptText: string) => {
+    setAiPrompt(promptText);
+    setActiveTab('campaigns');
+    setShowCampaignBuilder(true);
+    
+    // Automatically click generate strategy after switching
+    setTimeout(() => {
+      const submitBtn = document.getElementById('ai-submit-button');
+      if (submitBtn) submitBtn.click();
+    }, 150);
+  };
+
+  const formatRevenue = (val: number): string => {
+    const lakhs = val / 100000;
+    return `₹${lakhs.toFixed(1)}L`;
+  };
+
+  const handleCreateSegment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSegmentName.trim()) {
+      setGlobalError('Segment name is required.');
+      return;
+    }
+    
+    setIsCreatingSegment(true);
+    setGlobalError(null);
+    setGlobalSuccess(null);
+    
+    try {
+      const criteria: any = {};
+      if (newSegmentSpendMin) criteria.totalSpendMin = parseFloat(newSegmentSpendMin);
+      if (newSegmentLastOrderDays) criteria.lastOrderDaysAgo = parseInt(newSegmentLastOrderDays);
+      if (newSegmentProduct.trim()) criteria.specificProduct = newSegmentProduct.trim();
+      
+      const created = await api.createSegment({
+        name: newSegmentName,
+        description: newSegmentDesc,
+        audienceCriteria: criteria
+      });
+      
+      setGlobalSuccess(`Segment "${created.name}" created successfully with ${created.audienceSize} matched customers.`);
+      setTimeout(() => setGlobalSuccess(null), 4000);
+      
+      // Reset form
+      setNewSegmentName('');
+      setNewSegmentDesc('');
+      setNewSegmentSpendMin('');
+      setNewSegmentLastOrderDays('');
+      setNewSegmentProduct('');
+      
+      // Refresh segments list and analytics
+      await fetchAnalyticsAndCampaigns();
+      setShowSegmentBuilder(false);
+    } catch (err: any) {
+      setGlobalError('Failed to create segment: ' + err.message);
+    } finally {
+      setIsCreatingSegment(false);
+    }
+  };
+
+  const handleGetSuggestions = () => {
+    setIsSuggestionsLoading(true);
+    setTimeout(() => {
+      setShowSuggestions(true);
+      setIsSuggestionsLoading(false);
+    }, 500);
   };
 
   const filteredCustomers = customers.filter(cust => {
@@ -323,27 +544,39 @@ export default function Home() {
 
           <nav className="space-y-1.5">
             <button
-              onClick={() => setActiveTab('copilot')}
+              onClick={() => setActiveTab('dashboard')}
               className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'copilot'
+                activeTab === 'dashboard'
                   ? 'bg-white/5 text-violet-400 border border-white/5'
                   : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
               }`}
             >
-              <Sparkles className={`w-3.5 h-3.5 ${activeTab === 'copilot' ? 'text-violet-400' : 'text-gray-400'}`} />
-              Campaign Copilot
+              <LayoutDashboard className={`w-3.5 h-3.5 ${activeTab === 'dashboard' ? 'text-violet-400' : 'text-gray-400'}`} />
+              Dashboard
             </button>
 
             <button
-              onClick={() => { setActiveTab('hub'); setSelectedCampaign(null); }}
+              onClick={() => { setActiveTab('campaigns'); setSelectedCampaign(null); setShowCampaignBuilder(false); }}
               className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'hub'
+                activeTab === 'campaigns'
                   ? 'bg-white/5 text-violet-400 border border-white/5'
                   : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
               }`}
             >
-              <LayoutDashboard className={`w-3.5 h-3.5 ${activeTab === 'hub' ? 'text-violet-400' : 'text-gray-400'}`} />
-              Campaign Hub
+              <Megaphone className={`w-3.5 h-3.5 ${activeTab === 'campaigns' ? 'text-violet-400' : 'text-gray-400'}`} />
+              Campaigns
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('segments'); setShowSegmentBuilder(false); }}
+              className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'segments'
+                  ? 'bg-white/5 text-violet-400 border border-white/5'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+              }`}
+            >
+              <Target className={`w-3.5 h-3.5 ${activeTab === 'segments' ? 'text-violet-400' : 'text-gray-400'}`} />
+              Segments
             </button>
 
             <button
@@ -402,363 +635,265 @@ export default function Home() {
         )}
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          
-          {/* TAB 1: COPILOT BUILDER */}
-          {activeTab === 'copilot' && (
+            {/* TAB: DASHBOARD */}
+          {activeTab === 'dashboard' && (
             <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-1">
-              
               {/* Header */}
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-gradient">
-                  AI Campaign Copilot
+                  Dashboard
                 </h2>
                 <p className="text-text-secondary text-xs mt-1">
-                  Describe a shopper targeting goal. Our engine compiles filters, designs personalized messages, and runs lifecycle delivery simulations.
+                  Overview of your customer base and campaign performance
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                
-                {/* Left Side: Prompt Box & Presets */}
-                <div className="lg:col-span-7 space-y-6">
-                  <div className="glass-panel p-5">
-                    <form onSubmit={handleAnalyzeGoal} className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-accent-violet flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3" /> Copilot Command Console
-                        </label>
-                        <span className="text-[10px] text-text-tertiary">Gemini Mock mode (Free)</span>
-                      </div>
-                      
-                      <textarea
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        placeholder="e.g. 'Launch a WhatsApp campaign to win-back coffee buyers who spent above 500 but haven't ordered in 30 days...'"
-                        className="w-full h-32 bg-input-bg border border-card-border rounded-lg p-3 text-xs text-text-primary placeholder-text-tertiary focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/15 transition-all resize-none"
-                      />
-
-                      <button
-                        type="submit"
-                        disabled={isAnalyzing || !aiPrompt.trim()}
-                        className="w-full bg-gradient-to-r from-accent-violet to-accent-indigo hover:opacity-95 disabled:opacity-50 text-white font-semibold text-xs py-3 px-4 rounded-lg transition-all shadow-md shadow-accent-violet/10 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        {isAnalyzing ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            Parsing Campaign Intent...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-3.5 h-3.5" />
-                            Generate Strategy
-                          </>
-                        )}
-                      </button>
-                    </form>
+              {/* 4 Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {/* Total Customers */}
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between">
+                  <div className="space-y-2">
+                    <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Customers</span>
+                    <span className="text-2xl font-black text-text-primary block">
+                      {dashboardStats?.customerCount ?? 200}
+                    </span>
                   </div>
-
-                  {/* Preset Templates */}
-                  <div className="glass-panel p-5 space-y-3.5">
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">
-                      Quick Marketing Presets
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <button
-                        onClick={() => selectQuickPreset('Target coffee buyers who spent over ₹500 but haven\'t ordered in 30 days.')}
-                        className="p-3 bg-panel-bg hover:bg-white/[0.03] border border-card-border hover:border-accent-violet/20 rounded-lg text-left transition-all cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Coffee className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-xs font-semibold text-text-primary">Coffee Winback</span>
-                        </div>
-                        <p className="text-[10px] text-text-secondary leading-normal">
-                          Re-engage cold coffee shoppers with WhatsApp coffee deals.
-                        </p>
-                      </button>
-
-                      <button
-                        onClick={() => selectQuickPreset('Target premium sneaker shoppers who spent above ₹5000 in our database.')}
-                        className="p-3 bg-panel-bg hover:bg-white/[0.03] border border-card-border hover:border-accent-violet/20 rounded-lg text-left transition-all cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Activity className="w-3.5 h-3.5 text-violet-400" />
-                          <span className="text-xs font-semibold text-text-primary">Sneaker VIP Drops</span>
-                        </div>
-                        <p className="text-[10px] text-text-secondary leading-normal">
-                          Send luxury visual sneaker email stock updates to VIPs.
-                        </p>
-                      </button>
+                  <div className="flex flex-col items-end justify-between h-full min-h-[60px]">
+                    <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5">
+                      ↗ 19 new
+                    </span>
+                    <div className="bg-violet-500/10 text-violet-400 p-2.5 rounded-xl border border-violet-500/10">
+                      <Users className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
 
-                {/* Right Side: AI Execution Wizard / Strategy Output */}
-                <div className="lg:col-span-5">
-                  {/* Empty State */}
-                  {!isAnalyzing && !aiResult && (
-                    <div className="glass-panel p-8 text-center flex flex-col items-center justify-center min-h-[280px]">
-                      <div className="p-3 bg-panel-bg border border-card-border rounded-full mb-3 text-text-tertiary">
-                        <Sparkles className="w-6 h-6" />
-                      </div>
-                      <h4 className="text-xs font-bold text-text-primary">Copilot Engine Idle</h4>
-                      <p className="text-[10px] text-text-secondary max-w-xs mt-1 leading-normal">
-                        Input a campaign objective in the command console or choose a quick preset above.
-                      </p>
+                {/* Total Revenue */}
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between">
+                  <div className="space-y-2">
+                    <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Revenue</span>
+                    <span className="text-2xl font-black text-text-primary block">
+                      {dashboardStats?.totalRevenue ? formatRevenue(dashboardStats.totalRevenue) : '₹53.9L'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end justify-end h-full min-h-[60px]">
+                    <div className="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl border border-emerald-500/10">
+                      <IndianRupee className="w-5 h-5" />
                     </div>
-                  )}
-
-                  {/* Processing / Thinking Loader */}
-                  {isAnalyzing && (
-                    <div className="glass-panel p-6 space-y-5 min-h-[280px] flex flex-col justify-center">
-                      <div className="flex flex-col items-center text-center">
-                        <RefreshCw className="w-6 h-6 text-accent-violet animate-spin mb-3" />
-                        <h4 className="text-xs font-bold text-text-primary">Copilot Strategizer</h4>
-                        <p className="text-[10px] text-accent-violet mt-0.5">Segmenting datasets...</p>
-                      </div>
-
-                      {/* Timeline loader steps */}
-                      <div className="space-y-3 max-w-[240px] mx-auto">
-                        <div className="flex items-center gap-2.5 text-[11px]">
-                          <div className={`w-2 h-2 rounded-full ${analysisStep >= 1 ? 'bg-accent-violet glow-active' : 'bg-text-tertiary'}`}></div>
-                          <span className={analysisStep >= 1 ? 'text-text-primary font-bold' : 'text-text-tertiary'}>Parsing goals & keywords...</span>
-                        </div>
-                        <div className="flex items-center gap-2.5 text-[11px]">
-                          <div className={`w-2 h-2 rounded-full ${analysisStep >= 2 ? 'bg-accent-violet glow-active' : 'bg-text-tertiary'}`}></div>
-                          <span className={analysisStep >= 2 ? 'text-text-primary font-bold' : 'text-text-tertiary'}>Calculating database counts...</span>
-                        </div>
-                        <div className="flex items-center gap-2.5 text-[11px]">
-                          <div className={`w-2 h-2 rounded-full ${analysisStep >= 3 ? 'bg-accent-violet glow-active' : 'bg-text-tertiary'}`}></div>
-                          <span className={analysisStep >= 3 ? 'text-text-primary font-bold' : 'text-text-tertiary'}>Drafting copywriting & themes...</span>
-                        </div>
-                        <div className="flex items-center gap-2.5 text-[11px]">
-                          <div className={`w-2 h-2 rounded-full ${analysisStep >= 4 ? 'bg-accent-violet glow-active' : 'bg-text-tertiary'}`}></div>
-                          <span className={analysisStep >= 4 ? 'text-text-primary font-bold' : 'text-text-tertiary'}>Configuring CTA triggers...</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Strategy Output Result */}
-                  {aiResult && (
-                    <div className="glass-panel p-5 space-y-4">
-                      <div className="border-b border-card-border pb-2.5">
-                        <div className="text-[9px] font-bold text-accent-violet uppercase tracking-widest">
-                          Suggested Strategy
-                        </div>
-                        <h3 className="text-base font-bold text-text-primary mt-0.5">
-                          {aiResult.analysis.campaignName}
-                        </h3>
-                      </div>
-
-                      {/* Grid cards */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-panel-bg border border-card-border rounded-lg p-3">
-                          <span className="text-[9px] text-text-tertiary uppercase font-bold block">Audience Match</span>
-                          <span className="text-lg font-black text-text-primary mt-0.5 block">
-                            {aiResult.estimatedAudienceSize} <span className="text-xs text-text-secondary font-medium">shoppers</span>
-                          </span>
-                        </div>
-
-                        <div className="bg-panel-bg border border-card-border rounded-lg p-3">
-                          <span className="text-[9px] text-text-tertiary uppercase font-bold block">Channel Channel</span>
-                          <span className="text-xs font-bold text-accent-violet mt-1.5 flex items-center gap-1.5">
-                            {aiResult.analysis.recommendedChannel === 'Email' && <Mail className="w-3.5 h-3.5 text-accent-indigo" />}
-                            {aiResult.analysis.recommendedChannel === 'WhatsApp' && <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />}
-                            {aiResult.analysis.recommendedChannel === 'SMS' && <PhoneCall className="w-3.5 h-3.5 text-violet-400" />}
-                            {aiResult.analysis.recommendedChannel}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Summary explanation */}
-                      <div>
-                        <span className="text-[9px] text-text-tertiary uppercase font-bold block mb-1">AI Rationale</span>
-                        <p className="text-[11px] text-text-secondary leading-normal bg-panel-bg p-2.5 rounded-lg border border-card-border">
-                          {aiResult.analysis.campaignSummary}
-                        </p>
-                      </div>
-
-                      {/* Message Previewer */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[9px] text-text-tertiary uppercase font-bold">Personalized Message Preview</span>
-                          {aiResult.matchedCustomers.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-[9px] text-text-tertiary">Previewing:</span>
-                              <select
-                                value={selectedPreviewCustomer}
-                                onChange={(e) => setSelectedPreviewCustomer(e.target.value)}
-                                className="bg-input-bg border border-card-border rounded px-1.5 py-0.5 text-[9px] text-text-primary focus:outline-none focus:border-accent-violet"
-                              >
-                                {aiResult.matchedCustomers.map((cust: any) => (
-                                  <option key={cust._id} value={cust._id}>
-                                    {cust.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="bg-input-bg border border-card-border rounded-lg p-3 text-[11px] space-y-2">
-                          {aiResult.matchedCustomers.length === 0 ? (
-                            <p className="text-text-tertiary leading-relaxed italic">
-                              [No matching customers in segment. Message template below will be saved as draft.]
-                              <br/><br/>
-                              {aiResult.analysis.messageTemplate}
-                            </p>
-                          ) : (
-                            <p className="text-text-secondary leading-relaxed whitespace-pre-line select-all">
-                              {personalizedPreview || aiResult.analysis.messageTemplate}
-                            </p>
-                          )}
-                          {selectedCta && aiResult.analysis.suggestedCTAs && (
-                            <div className="flex gap-1.5 pt-2 border-t border-card-border">
-                              {aiResult.analysis.suggestedCTAs.map((cta: string, idx: number) => (
-                                <button
-                                  key={idx}
-                                  onClick={() => setSelectedCta(cta)}
-                                  className={`text-[9px] px-2.5 py-1 rounded font-bold border transition-all cursor-pointer ${
-                                    selectedCta === cta 
-                                      ? 'bg-accent-violet/10 text-accent-violet border-accent-violet/30' 
-                                      : 'bg-white/[0.01] text-text-tertiary border-card-border hover:text-text-secondary'
-                                  }`}
-                                >
-                                  {cta}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Action buttons */}
-                      <button
-                        onClick={handleLaunchCampaign}
-                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs py-3 px-4 rounded-lg transition-all shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <Send className="w-3.5 h-3.5 animate-pulse" />
-                        {aiResult.estimatedAudienceSize === 0 ? 'Save Campaign as Draft' : 'Launch Campaign & Simulate Webhooks'}
-                      </button>
-                    </div>
-                  )}
+                  </div>
                 </div>
 
+                {/* Campaigns Sent */}
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between">
+                  <div className="space-y-2">
+                    <span className="text-[10px] text-text-tertiary uppercase font-bold block">Campaigns Sent</span>
+                    <span className="text-2xl font-black text-text-primary block">
+                      {dashboardStats?.campaignCount ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end justify-between h-full min-h-[60px]">
+                    <span className="text-[10px] text-emerald-500 font-bold">
+                      ↗ —
+                    </span>
+                    <div className="bg-amber-500/10 text-amber-400 p-2.5 rounded-xl border border-amber-500/10">
+                      <Megaphone className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Segments */}
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between">
+                  <div className="space-y-2">
+                    <span className="text-[10px] text-text-tertiary uppercase font-bold block">Segments</span>
+                    <span className="text-2xl font-black text-text-primary block">
+                      {dashboardStats?.segmentCount ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end justify-end h-full min-h-[60px]">
+                    <div className="bg-pink-500/10 text-pink-400 p-2.5 rounded-xl border border-pink-500/10">
+                      <Target className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Row with Revenue Timeline & Top Cities */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                {/* Revenue Timeline (2/3) */}
+                <div className="lg:col-span-8 glass-panel p-5 flex flex-col justify-between">
+                  <div className="mb-4">
+                    <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
+                      Revenue Timeline
+                    </h3>
+                  </div>
+                  <div className="flex-1 flex items-center justify-center min-h-[200px]">
+                    {dashboardStats?.revenueTimeline ? (
+                      <RevenueChart data={dashboardStats.revenueTimeline} />
+                    ) : (
+                      <div className="text-text-tertiary text-xs">Loading timeline...</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Top Cities (1/3) */}
+                <div className="lg:col-span-4 glass-panel p-5 flex flex-col justify-between">
+                  <div className="mb-4">
+                    <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
+                      Top Cities
+                    </h3>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center">
+                    <div className="space-y-4">
+                      {(dashboardStats?.topCities || [
+                        { city: 'Bangalore', count: 24 },
+                        { city: 'Hyderabad', count: 17 },
+                        { city: 'Lucknow', count: 15 },
+                        { city: 'Chandigarh', count: 15 },
+                        { city: 'Delhi', count: 15 }
+                      ]).slice(0, 5).map((cityItem, idx) => {
+                        const colors = [
+                          'bg-indigo-500',
+                          'bg-sky-500',
+                          'bg-violet-400',
+                          'bg-purple-300',
+                          'bg-blue-200'
+                        ];
+                        const colorClass = colors[idx % colors.length];
+                        const maxCount = Math.max(...(dashboardStats?.topCities?.map(c => c.count) || [24]), 1);
+                        const percentage = (cityItem.count / maxCount) * 100;
+
+                        return (
+                          <div key={cityItem.city} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${colorClass}`}></span>
+                                <span className="font-bold text-text-primary">{cityItem.city}</span>
+                              </div>
+                              <span className="font-bold text-text-primary">{cityItem.count}</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full ${colorClass}`}
+                                style={{ width: `${percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Section: AI Campaign Suggestions */}
+              <div className="glass-panel p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-violet-500/10 text-violet-400 p-2 rounded-lg mt-0.5 animate-pulse">
+                      <Sparkles className="w-4 h-4 text-violet-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
+                        AI Campaign Suggestions
+                      </h3>
+                      <p className="text-[11px] text-text-secondary mt-0.5 leading-normal">
+                        Click "Get Suggestions" to let AI analyze your customer data and recommend smart campaigns.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleGetSuggestions}
+                    disabled={isSuggestionsLoading}
+                    className="bg-accent-violet hover:bg-accent-violet/90 text-white font-bold text-xs py-2 px-4 rounded-lg transition-all shadow-md shadow-accent-violet/15 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0 self-start sm:self-center"
+                  >
+                    {isSuggestionsLoading ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        Analyzing Data...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Get Suggestions
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Suggestions Cards Grid */}
+                {showSuggestions && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    {/* Coffee Winback */}
+                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:border-accent-violet/30 transition-all">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] px-2 py-0.5 rounded font-black uppercase bg-emerald-950/20 text-emerald-400 border border-emerald-500/10">WhatsApp</span>
+                          <span className="text-[9px] text-text-tertiary font-bold">Criteria Match: 2</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-text-primary mt-1">Coffee Winback</h4>
+                        <p className="text-[10px] text-text-secondary leading-relaxed">
+                          Target coffee buyers who spent over ₹500 but haven't ordered in 30 days.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => applySuggestion("Target coffee buyers who spent over ₹500 but haven't ordered in 30 days.")}
+                        className="w-full bg-white/5 hover:bg-white/10 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        Use Prompt &rarr;
+                      </button>
+                    </div>
+
+                    {/* Sneaker VIP Drop */}
+                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:border-accent-violet/30 transition-all">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] px-2 py-0.5 rounded font-black uppercase bg-accent-indigo/15 text-accent-indigo border border-accent-indigo/10">Email</span>
+                          <span className="text-[9px] text-text-tertiary font-bold">Criteria Match: 3</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-text-primary mt-1">Sneaker VIP Drops</h4>
+                        <p className="text-[10px] text-text-secondary leading-relaxed">
+                          Target premium sneaker shoppers who spent above ₹5000 in our database.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => applySuggestion("Target premium sneaker shoppers who spent above ₹5000 in our database.")}
+                        className="w-full bg-white/5 hover:bg-white/10 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        Use Prompt &rarr;
+                      </button>
+                    </div>
+
+                    {/* Delhi Special Offer */}
+                    <div className="bg-panel-bg border border-card-border p-4 rounded-xl flex flex-col justify-between gap-3.5 hover:border-accent-violet/30 transition-all">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] px-2 py-0.5 rounded font-black uppercase bg-violet-950/20 text-violet-400 border border-violet-500/10">SMS</span>
+                          <span className="text-[9px] text-text-tertiary font-bold">Criteria Match: 5</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-text-primary mt-1">Delhi Special Offer</h4>
+                        <p className="text-[10px] text-text-secondary leading-relaxed">
+                          Target shoppers in Delhi who bought Filter Coffee.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => applySuggestion("Target shoppers in Delhi who bought Filter Coffee.")}
+                        className="w-full bg-white/5 hover:bg-white/10 text-text-primary font-bold text-[10px] py-1.5 rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        Use Prompt &rarr;
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* TAB 2: CAMPAIGN HUB */}
-          {activeTab === 'hub' && (
+          {/* TAB: CAMPAIGNS */}
+          {activeTab === 'campaigns' && (
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
               
-              {!selectedCampaign ? (
-                <>
-                  <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-gradient">
-                      Campaign Hub
-                    </h2>
-                    <p className="text-text-secondary text-xs mt-1">
-                      Monitor overall engagement, click frequencies, and campaign metrics aggregated across channels.
-                    </p>
-                  </div>
-
-                  {/* Dashboard Metrics */}
-                  {dashboardStats && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="glass-panel p-4">
-                        <span className="text-[9px] text-text-tertiary uppercase font-bold block">Total Reach</span>
-                        <div className="text-xl font-bold text-text-primary mt-0.5">{dashboardStats.metrics.sent}</div>
-                        <div className="text-[9px] text-text-tertiary mt-0.5">Across all campaigns</div>
-                      </div>
-                      <div className="glass-panel p-4">
-                        <span className="text-[9px] text-text-tertiary uppercase font-bold block">Delivered</span>
-                        <div className="text-xl font-bold text-emerald-400 mt-0.5">{dashboardStats.metrics.delivered}</div>
-                        <div className="text-[9px] text-emerald-500 mt-0.5">({dashboardStats.metrics.deliveryRate}% rate)</div>
-                      </div>
-                      <div className="glass-panel p-4">
-                        <span className="text-[9px] text-text-tertiary uppercase font-bold block">Open Rate</span>
-                        <div className="text-xl font-bold text-accent-violet mt-0.5">{dashboardStats.metrics.openRate}%</div>
-                        <div className="text-[9px] text-accent-violet mt-0.5">({dashboardStats.metrics.opened} opens)</div>
-                      </div>
-                      <div className="glass-panel p-4">
-                        <span className="text-[9px] text-text-tertiary uppercase font-bold block">Click-Through</span>
-                        <div className="text-xl font-bold text-accent-indigo mt-0.5">{dashboardStats.metrics.clickRate}%</div>
-                        <div className="text-[9px] text-accent-indigo mt-0.5">({dashboardStats.metrics.clicked} clicks)</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Campaigns List */}
-                  <div className="glass-panel flex-1 flex flex-col overflow-hidden">
-                    <div className="p-4 border-b border-card-border flex items-center justify-between">
-                      <h3 className="font-bold text-xs text-text-primary uppercase tracking-wide">All Campaigns</h3>
-                      <span className="text-xs text-text-tertiary font-bold">{campaigns.length} campaigns</span>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto">
-                      {campaigns.length === 0 ? (
-                        <div className="p-20 text-center flex flex-col items-center justify-center">
-                          <Users className="w-8 h-8 text-text-tertiary mb-3" />
-                          <h4 className="text-xs font-semibold text-text-secondary">No campaigns launched</h4>
-                          <p className="text-[10px] text-text-tertiary mt-1 max-w-xs leading-normal">
-                            Build a strategy using the AI Campaign Copilot first to populate this repository.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="divide-y divide-card-border">
-                          {campaigns.map((camp) => (
-                            <button
-                              key={camp._id}
-                              onClick={() => setSelectedCampaign(camp)}
-                              className="w-full p-4 hover:bg-panel-bg flex items-center justify-between text-left transition-all group cursor-pointer"
-                            >
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-xs text-text-primary group-hover:text-accent-violet transition-colors">
-                                    {camp.name}
-                                  </span>
-                                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${
-                                    camp.status === 'Completed' ? 'bg-emerald-950/20 text-emerald-400 border border-emerald-500/10' :
-                                    camp.status === 'Running' ? 'bg-violet-950/20 text-violet-400 border border-violet-500/10 glow-active' :
-                                    'bg-text-tertiary/10 text-text-tertiary border border-card-border'
-                                  }`}>
-                                    {camp.status}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-text-secondary line-clamp-1 max-w-xl">
-                                  {camp.description}
-                                </p>
-                              </div>
-
-                              <div className="flex items-center gap-8 text-right shrink-0">
-                                <div className="text-xs hidden md:block">
-                                  <span className="text-text-tertiary text-[9px] uppercase font-bold block">Delivery</span>
-                                  <span className="font-bold text-text-primary mt-0.5 block">
-                                    {camp.deliveredCount} / {camp.audienceSize}
-                                  </span>
-                                </div>
-
-                                <div className="text-xs hidden md:block">
-                                  <span className="text-text-tertiary text-[9px] uppercase font-bold block">CTR</span>
-                                  <span className="font-bold text-accent-indigo mt-0.5 block">
-                                    {camp.openedCount > 0 ? Math.round((camp.clickedCount / camp.openedCount) * 100) : 0}%
-                                  </span>
-                                </div>
-
-                                <ChevronRight className="w-3.5 h-3.5 text-text-tertiary group-hover:text-text-secondary transition-colors" />
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                
-                // DETAILED CAMPAIGN TRACKER (WEBHOOK SIMULATOR PROGRESS)
+              {selectedCampaign ? (
+                /* DETAILED CAMPAIGN TRACKER (WEBHOOK SIMULATOR PROGRESS) */
                 <div className="flex-1 flex flex-col gap-6 overflow-hidden">
                   
                   {/* Detail Header */}
@@ -788,10 +923,8 @@ export default function Home() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 overflow-hidden">
-                    
                     {/* Left Column: Live Analytics & Recipient Logs */}
                     <div className="lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-1">
-                      
                       {/* Live Counter Cards */}
                       <div className="grid grid-cols-4 gap-4">
                         <div className="bg-panel-bg border border-card-border p-3.5 rounded-lg text-center">
@@ -914,7 +1047,7 @@ export default function Home() {
                                     <span className="text-text-tertiary font-bold uppercase">webhook</span>
                                   </div>
                                   <div className="leading-relaxed text-text-secondary">
-                                    CRM $\leftarrow$ Simulator: <span className="text-emerald-400 font-bold">{log.status}</span> notification for{' '}
+                                    CRM &larr; Simulator: <span className="text-emerald-400 font-bold">{log.status}</span> notification for{' '}
                                     <span className="text-text-primary">{log.recipientDetails.name}</span>
                                   </div>
                                 </div>
@@ -923,10 +1056,564 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                </div>
+              ) : showCampaignBuilder ? (
+                /* AI CAMPAIGN WIZARD (OLD COPILOT) */
+                <div className="flex-1 flex flex-col gap-5 overflow-y-auto pr-1">
+                  
+                  {/* Header */}
+                  <div>
+                    <button
+                      onClick={() => { setShowCampaignBuilder(false); setAiResult(null); }}
+                      className="text-xs text-accent-violet hover:text-accent-violet/80 font-bold flex items-center gap-1 cursor-pointer bg-transparent border-0 mb-1"
+                    >
+                      &larr; Back to Campaigns
+                    </button>
+                    <h2 className="text-2xl font-bold tracking-tight text-gradient">
+                      AI Campaign Builder
+                    </h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    {/* Prompt input */}
+                    <div className="lg:col-span-7 space-y-6">
+                      <div className="glass-panel p-5">
+                        <form onSubmit={handleAnalyzeGoal} className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-accent-violet flex items-center gap-1.5">
+                              <Sparkles className="w-3 h-3" /> Campaign Copywriter Console
+                            </label>
+                            <span className="text-[10px] text-text-tertiary">Mock Gemini Engine</span>
+                          </div>
+                          
+                          <textarea
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            placeholder="e.g. 'Launch a WhatsApp campaign to win-back coffee buyers who spent above 500 but haven't ordered in 30 days...'"
+                            className="w-full h-32 bg-input-bg border border-card-border rounded-lg p-3 text-xs text-text-primary placeholder-text-tertiary focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/15 transition-all resize-none"
+                          />
+
+                          <button
+                            id="ai-submit-button"
+                            type="submit"
+                            disabled={isAnalyzing || !aiPrompt.trim()}
+                            className="w-full bg-gradient-to-r from-accent-violet to-accent-indigo hover:opacity-95 disabled:opacity-50 text-white font-semibold text-xs py-3 px-4 rounded-lg transition-all shadow-md shadow-accent-violet/10 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                          >
+                            {isAnalyzing ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                Analyzing Shopper Match...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-3.5 h-3.5" />
+                                Generate Strategy
+                              </>
+                            )}
+                          </button>
+                        </form>
+                      </div>
+
+                      {/* Quick presets */}
+                      <div className="glass-panel p-5 space-y-3">
+                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">
+                          Quick Presets
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <button
+                            onClick={() => selectQuickPreset("Target coffee buyers who spent over ₹500 but haven't ordered in 30 days.")}
+                            className="p-3 bg-panel-bg hover:bg-white/[0.03] border border-card-border hover:border-accent-violet/20 rounded-lg text-left transition-all cursor-pointer"
+                          >
+                            <span className="text-xs font-semibold text-text-primary block mb-1">Coffee Winback</span>
+                            <span className="text-[10px] text-text-secondary leading-normal block">Re-engage inactive coffee shoppers with WhatsApp codes.</span>
+                          </button>
+                          <button
+                            onClick={() => selectQuickPreset("Target premium sneaker shoppers who spent above ₹5000 in our database.")}
+                            className="p-3 bg-panel-bg hover:bg-white/[0.03] border border-card-border hover:border-accent-violet/20 rounded-lg text-left transition-all cursor-pointer"
+                          >
+                            <span className="text-xs font-semibold text-text-primary block mb-1">Sneaker VIP Drops</span>
+                            <span className="text-[10px] text-text-secondary leading-normal block">Email luxury sneaker catalog updates to VIP customers.</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Strategy Output */}
+                    <div className="lg:col-span-5">
+                      {!isAnalyzing && !aiResult && (
+                        <div className="glass-panel p-8 text-center flex flex-col items-center justify-center min-h-[280px]">
+                          <div className="p-3 bg-panel-bg border border-card-border rounded-full mb-3 text-text-tertiary">
+                            <Sparkles className="w-6 h-6" />
+                          </div>
+                          <h4 className="text-xs font-bold text-text-primary">Copilot Engine Idle</h4>
+                          <p className="text-[10px] text-text-secondary max-w-xs mt-1 leading-normal">
+                            Describe your targeting goal or choose a suggestion preset to let AI draft your campaign.
+                          </p>
+                        </div>
+                      )}
+
+                      {isAnalyzing && (
+                        <div className="glass-panel p-6 space-y-5 min-h-[280px] flex flex-col justify-center">
+                          <div className="flex flex-col items-center text-center">
+                            <RefreshCw className="w-6 h-6 text-accent-violet animate-spin mb-3" />
+                            <h4 className="text-xs font-bold text-text-primary">Copilot Strategizer</h4>
+                            <p className="text-[10px] text-accent-violet mt-0.5">Segmenting datasets...</p>
+                          </div>
+
+                          <div className="space-y-3 max-w-[240px] mx-auto">
+                            <div className="flex items-center gap-2.5 text-[11px]">
+                              <div className={`w-2 h-2 rounded-full ${analysisStep >= 1 ? 'bg-accent-violet glow-active' : 'bg-text-tertiary'}`}></div>
+                              <span className={analysisStep >= 1 ? 'text-text-primary font-bold' : 'text-text-tertiary'}>Parsing goals & keywords...</span>
+                            </div>
+                            <div className="flex items-center gap-2.5 text-[11px]">
+                              <div className={`w-2 h-2 rounded-full ${analysisStep >= 2 ? 'bg-accent-violet glow-active' : 'bg-text-tertiary'}`}></div>
+                              <span className={analysisStep >= 2 ? 'text-text-primary font-bold' : 'text-text-tertiary'}>Calculating database counts...</span>
+                            </div>
+                            <div className="flex items-center gap-2.5 text-[11px]">
+                              <div className={`w-2 h-2 rounded-full ${analysisStep >= 3 ? 'bg-accent-violet glow-active' : 'bg-text-tertiary'}`}></div>
+                              <span className={analysisStep >= 3 ? 'text-text-primary font-bold' : 'text-text-tertiary'}>Drafting copywriting & themes...</span>
+                            </div>
+                            <div className="flex items-center gap-2.5 text-[11px]">
+                              <div className={`w-2 h-2 rounded-full ${analysisStep >= 4 ? 'bg-accent-violet glow-active' : 'bg-text-tertiary'}`}></div>
+                              <span className={analysisStep >= 4 ? 'text-text-primary font-bold' : 'text-text-tertiary'}>Configuring CTA triggers...</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {aiResult && (
+                        <div className="glass-panel p-5 space-y-4">
+                          <div className="border-b border-card-border pb-2.5">
+                            <div className="text-[9px] font-bold text-accent-violet uppercase tracking-widest">Suggested Strategy</div>
+                            <h3 className="text-base font-bold text-text-primary mt-0.5">{aiResult.analysis.campaignName}</h3>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-panel-bg border border-card-border rounded-lg p-3">
+                              <span className="text-[9px] text-text-tertiary uppercase font-bold block">Audience Match</span>
+                              <span className="text-lg font-black text-text-primary mt-0.5 block">
+                                {aiResult.estimatedAudienceSize} <span className="text-xs text-text-secondary font-medium">shoppers</span>
+                              </span>
+                            </div>
+
+                            <div className="bg-panel-bg border border-card-border rounded-lg p-3">
+                              <span className="text-[9px] text-text-tertiary uppercase font-bold block">Channel Channel</span>
+                              <span className="text-xs font-bold text-accent-violet mt-1.5 flex items-center gap-1.5">
+                                {aiResult.analysis.recommendedChannel === 'Email' && <Mail className="w-3.5 h-3.5 text-accent-indigo" />}
+                                {aiResult.analysis.recommendedChannel === 'WhatsApp' && <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />}
+                                {aiResult.analysis.recommendedChannel === 'SMS' && <PhoneCall className="w-3.5 h-3.5 text-violet-400" />}
+                                {aiResult.analysis.recommendedChannel}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="text-[9px] text-text-tertiary uppercase font-bold block mb-1">AI Rationale</span>
+                            <p className="text-[11px] text-text-secondary leading-normal bg-panel-bg p-2.5 rounded-lg border border-card-border">
+                              {aiResult.analysis.campaignSummary}
+                            </p>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[9px] text-text-tertiary uppercase font-bold">Personalized Message Preview</span>
+                              {aiResult.matchedCustomers.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[9px] text-text-tertiary">Previewing:</span>
+                                  <select
+                                    value={selectedPreviewCustomer}
+                                    onChange={(e) => setSelectedPreviewCustomer(e.target.value)}
+                                    className="bg-input-bg border border-card-border rounded px-1.5 py-0.5 text-[9px] text-text-primary focus:outline-none focus:border-accent-violet"
+                                  >
+                                    {aiResult.matchedCustomers.map((cust: any) => (
+                                      <option key={cust._id} value={cust._id}>{cust.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="bg-input-bg border border-card-border rounded-lg p-3 text-[11px] space-y-2">
+                              {aiResult.matchedCustomers.length === 0 ? (
+                                <p className="text-text-tertiary leading-relaxed italic">
+                                  [No matching customers in segment. Message template below will be saved as draft.]
+                                  <br/><br/>
+                                  {aiResult.analysis.messageTemplate}
+                                </p>
+                              ) : (
+                                <p className="text-text-secondary leading-relaxed whitespace-pre-line select-all">
+                                  {personalizedPreview || aiResult.analysis.messageTemplate}
+                                </p>
+                              )}
+                              {selectedCta && aiResult.analysis.suggestedCTAs && (
+                                <div className="flex gap-1.5 pt-2 border-t border-card-border">
+                                  {aiResult.analysis.suggestedCTAs.map((cta: string, idx: number) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() => setSelectedCta(cta)}
+                                      className={`text-[9px] px-2.5 py-1 rounded font-bold border transition-all cursor-pointer ${
+                                        selectedCta === cta 
+                                          ? 'bg-accent-violet/10 text-accent-violet border-accent-violet/30' 
+                                          : 'bg-white/[0.01] text-text-tertiary border-card-border hover:text-text-secondary'
+                                      }`}
+                                    >
+                                      {cta}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={handleLaunchCampaign}
+                            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs py-3 px-4 rounded-lg transition-all shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <Send className="w-3.5 h-3.5 animate-pulse" />
+                            {aiResult.estimatedAudienceSize === 0 ? 'Save Campaign as Draft' : 'Launch Campaign & Simulate Webhooks'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
                   </div>
                 </div>
+              ) : (
+                /* CAMPAIGNS LIST VIEW */
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold tracking-tight text-gradient">
+                        Campaigns
+                      </h2>
+                      <p className="text-text-secondary text-xs mt-1">
+                        Create and send personalized campaigns to your segments
+                      </p>
+                    </div>
 
+                    {campaigns.length > 0 && (
+                      <button
+                        onClick={() => setShowCampaignBuilder(true)}
+                        className="bg-accent-violet hover:bg-accent-violet/90 text-white font-bold text-xs py-2 px-3.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-accent-violet/10"
+                      >
+                        <Plus className="w-4 h-4" /> New Campaign
+                      </button>
+                    )}
+                  </div>
+
+                  {campaigns.length === 0 ? (
+                    /* EMPTY STATE (IMAGE 3) */
+                    <div className="glass-panel flex-1 flex flex-col items-center justify-center p-20 text-center min-h-[350px]">
+                      <div className="p-4 bg-white/[0.02] border border-card-border rounded-full mb-4 text-text-tertiary">
+                        <Megaphone className="w-8 h-8" />
+                      </div>
+                      <h3 className="font-bold text-sm text-text-primary">No campaigns yet</h3>
+                      <p className="text-xs text-text-secondary mt-1 max-w-xs leading-normal">
+                        Create your first campaign to start reaching your customers
+                      </p>
+                      <button
+                        onClick={() => setShowCampaignBuilder(true)}
+                        className="mt-5 bg-accent-violet hover:bg-accent-violet/90 text-white font-bold text-xs py-2.5 px-5 rounded-lg transition-all shadow-md shadow-accent-violet/15 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" /> Create Campaign
+                      </button>
+                    </div>
+                  ) : (
+                    /* DYNAMIC LIST */
+                    <div className="glass-panel flex-1 flex flex-col overflow-hidden">
+                      <div className="p-4 border-b border-card-border flex items-center justify-between bg-black/10">
+                        <h3 className="font-bold text-xs text-text-primary uppercase tracking-wide">All Campaigns</h3>
+                        <span className="text-xs text-text-tertiary font-bold">{campaigns.length} campaigns</span>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto divide-y divide-card-border">
+                        {campaigns.map((camp) => (
+                          <button
+                            key={camp._id}
+                            onClick={() => setSelectedCampaign(camp)}
+                            className="w-full p-4 hover:bg-panel-bg flex items-center justify-between text-left transition-all group cursor-pointer border-0 bg-transparent focus:outline-none"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-xs text-text-primary group-hover:text-accent-violet transition-colors">
+                                  {camp.name}
+                                </span>
+                                <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${
+                                  camp.status === 'Completed' ? 'bg-emerald-950/20 text-emerald-400 border border-emerald-500/10' :
+                                  camp.status === 'Running' ? 'bg-violet-950/20 text-violet-400 border border-violet-500/10 glow-active' :
+                                  'bg-text-tertiary/10 text-text-tertiary border border-card-border'
+                                }`}>
+                                  {camp.status}
+                                </span>
+                              </div>
+                              <p className="text-xs text-text-secondary line-clamp-1 max-w-xl">
+                                {camp.description}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-8 text-right shrink-0">
+                              <div className="text-xs hidden md:block">
+                                <span className="text-text-tertiary text-[9px] uppercase font-bold block">Delivery</span>
+                                <span className="font-bold text-text-primary mt-0.5 block">
+                                  {camp.deliveredCount} / {camp.audienceSize}
+                                </span>
+                              </div>
+                              <div className="text-xs hidden md:block">
+                                <span className="text-text-tertiary text-[9px] uppercase font-bold block">CTR</span>
+                                <span className="font-bold text-accent-indigo mt-0.5 block">
+                                  {camp.openedCount > 0 ? Math.round((camp.clickedCount / camp.openedCount) * 100) : 0}%
+                                </span>
+                              </div>
+                              <ChevronRight className="w-3.5 h-3.5 text-text-tertiary group-hover:text-text-secondary transition-colors" />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+            </div>
+          )}
+
+          {/* TAB: SEGMENTS */}
+          {activeTab === 'segments' && (
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+              
+              {showSegmentBuilder ? (
+                /* SEGMENT CREATION FORM */
+                <div className="flex-1 flex flex-col gap-5 overflow-y-auto pr-1">
+                  <div>
+                    <button
+                      onClick={() => setShowSegmentBuilder(false)}
+                      className="text-xs text-accent-violet hover:text-accent-violet/80 font-bold flex items-center gap-1 cursor-pointer bg-transparent border-0 mb-1"
+                    >
+                      &larr; Back to Segments
+                    </button>
+                    <h2 className="text-2xl font-bold tracking-tight text-gradient">
+                      Create New Segment
+                    </h2>
+                    <p className="text-text-secondary text-xs mt-1">
+                      Group customers dynamically by setting transaction and purchasing criteria constraints.
+                    </p>
+                  </div>
+
+                  <div className="glass-panel p-6 max-w-xl space-y-4">
+                    <form onSubmit={handleCreateSegment} className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">
+                          Segment Name
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newSegmentName}
+                          onChange={(e) => setNewSegmentName(e.target.value)}
+                          placeholder="e.g. Inactive Big Spenders"
+                          className="w-full bg-input-bg border border-card-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-violet"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">
+                          Description
+                        </label>
+                        <textarea
+                          value={newSegmentDesc}
+                          onChange={(e) => setNewSegmentDesc(e.target.value)}
+                          placeholder="e.g. Customers who purchased items above ₹1000 but are inactive for more than 40 days."
+                          className="w-full h-20 bg-input-bg border border-card-border rounded-lg p-3 text-xs text-text-primary focus:outline-none focus:border-accent-violet resize-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">
+                            Minimum Spending (₹)
+                          </label>
+                          <input
+                            type="number"
+                            value={newSegmentSpendMin}
+                            onChange={(e) => setNewSegmentSpendMin(e.target.value)}
+                            placeholder="e.g. 1000"
+                            className="w-full bg-input-bg border border-card-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-violet"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">
+                            Last Order Recency (Days Inactive)
+                          </label>
+                          <input
+                            type="number"
+                            value={newSegmentLastOrderDays}
+                            onChange={(e) => setNewSegmentLastOrderDays(e.target.value)}
+                            placeholder="e.g. 30"
+                            className="w-full bg-input-bg border border-card-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-violet"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">
+                          Purchased Specific Product Affinity
+                        </label>
+                        <select
+                          value={newSegmentProduct}
+                          onChange={(e) => setNewSegmentProduct(e.target.value)}
+                          className="w-full bg-input-bg border border-card-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-violet"
+                        >
+                          <option value="">Any Product</option>
+                          <option value="Cappuccino">Cappuccino</option>
+                          <option value="Cold Brew Coffee">Cold Brew Coffee</option>
+                          <option value="Filter Coffee">Filter Coffee</option>
+                          <option value="Latte">Latte</option>
+                          <option value="Air Jordan Sneakers">Air Jordan Sneakers</option>
+                          <option value="Nike Pegasus Running Shoes">Nike Pegasus Running Shoes</option>
+                          <option value="Adidas Ultraboost Sneakers">Adidas Ultraboost Sneakers</option>
+                        </select>
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          type="submit"
+                          disabled={isCreatingSegment}
+                          className="flex-1 bg-accent-violet hover:bg-accent-violet/90 disabled:opacity-50 text-white font-bold text-xs py-2.5 px-4 rounded-lg transition-all shadow-md shadow-accent-violet/10 flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {isCreatingSegment ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              Creating Segment...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4" />
+                              Create Segment
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowSegmentBuilder(false)}
+                          className="bg-white/5 border border-card-border hover:border-white/10 text-text-primary font-bold text-xs py-2.5 px-4 rounded-lg transition-all cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              ) : (
+                /* SEGMENTS LIST VIEW */
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold tracking-tight text-gradient">
+                        Segments
+                      </h2>
+                      <p className="text-text-secondary text-xs mt-1">
+                        Create audience segments using AI-powered natural language
+                      </p>
+                    </div>
+
+                    {segments.length > 0 && (
+                      <button
+                        onClick={() => setShowSegmentBuilder(true)}
+                        className="bg-accent-violet hover:bg-accent-violet/90 text-white font-bold text-xs py-2 px-3.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-accent-violet/10"
+                      >
+                        <Plus className="w-4 h-4" /> New Segment
+                      </button>
+                    )}
+                  </div>
+
+                  {segments.length === 0 ? (
+                    /* EMPTY STATE (IMAGE 2) */
+                    <div className="glass-panel flex-1 flex flex-col items-center justify-center p-20 text-center min-h-[350px]">
+                      <div className="p-4 bg-white/[0.02] border border-card-border rounded-full mb-4 text-text-tertiary">
+                        <Target className="w-8 h-8" />
+                      </div>
+                      <h3 className="font-bold text-sm text-text-primary">No segments yet</h3>
+                      <p className="text-xs text-text-secondary mt-1 max-w-xs leading-normal">
+                        Create your first audience segment using the AI builder above
+                      </p>
+                      <button
+                        onClick={() => setShowSegmentBuilder(true)}
+                        className="mt-5 bg-accent-violet hover:bg-accent-violet/90 text-white font-bold text-xs py-2.5 px-5 rounded-lg transition-all shadow-md shadow-accent-violet/15 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" /> Create Segment
+                      </button>
+                    </div>
+                  ) : (
+                    /* DYNAMIC LIST */
+                    <div className="glass-panel flex-1 flex flex-col overflow-hidden">
+                      <div className="p-4 border-b border-card-border flex items-center justify-between bg-black/10">
+                        <h3 className="font-bold text-xs text-text-primary uppercase tracking-wide">All Segments</h3>
+                        <span className="text-xs text-text-tertiary font-bold">{segments.length} segments</span>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto divide-y divide-card-border">
+                        {segments.map((seg) => (
+                          <div
+                            key={seg._id}
+                            className="p-4 hover:bg-panel-bg flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
+                          >
+                            <div className="space-y-1">
+                              <span className="font-bold text-xs text-text-primary">
+                                {seg.name}
+                              </span>
+                              <p className="text-xs text-text-secondary leading-relaxed">
+                                {seg.description || 'No description provided.'}
+                              </p>
+                              
+                              {/* Render criteria tags */}
+                              <div className="flex flex-wrap gap-1.5 pt-1.5">
+                                {seg.audienceCriteria?.totalSpendMin !== undefined && (
+                                  <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 px-2 py-0.5 rounded text-[9px] font-bold">
+                                    Spend &ge; ₹{seg.audienceCriteria.totalSpendMin}
+                                  </span>
+                                )}
+                                {seg.audienceCriteria?.lastOrderDaysAgo !== undefined && (
+                                  <span className="bg-amber-500/10 text-amber-400 border border-amber-500/15 px-2 py-0.5 rounded text-[9px] font-bold">
+                                    Inactive &ge; {seg.audienceCriteria.lastOrderDaysAgo}d
+                                  </span>
+                                )}
+                                {seg.audienceCriteria?.specificProduct && (
+                                  <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/15 px-2 py-0.5 rounded text-[9px] font-bold font-mono">
+                                    Product: {seg.audienceCriteria.specificProduct}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-6 text-right shrink-0">
+                              <div className="text-xs">
+                                <span className="text-text-tertiary text-[9px] uppercase font-bold block">Size</span>
+                                <span className="font-extrabold text-text-primary mt-0.5 block text-sm">
+                                  {seg.audienceSize} <span className="text-[10px] font-medium text-text-secondary">shoppers</span>
+                                </span>
+                              </div>
+                              
+                              <div className="text-xs hidden sm:block">
+                                <span className="text-text-tertiary text-[9px] uppercase font-bold block">Created</span>
+                                <span className="font-medium text-text-secondary mt-0.5 block">
+                                  {new Date(seg.createdAt).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
             </div>

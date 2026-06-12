@@ -8,6 +8,7 @@ export interface ICustomer {
   name: string;
   email: string;
   phone: string;
+  city: string; // Indian city location (e.g. Bangalore, Hyderabad, Delhi)
   totalSpend: number;
   lastOrderDate: string | null;
   createdAt: string;
@@ -20,6 +21,19 @@ export interface IOrder {
   price: number;
   quantity: number;
   orderDate: string;
+}
+
+export interface ISegment {
+  _id: string;
+  name: string;
+  description: string;
+  audienceCriteria: {
+    totalSpendMin?: number;
+    lastOrderDaysAgo?: number;
+    specificProduct?: string;
+  };
+  audienceSize: number;
+  createdAt: string;
 }
 
 export interface ICampaign {
@@ -58,11 +72,12 @@ export interface ICampaignLog {
   updatedAt: string;
 }
 
-// --- MONGOOSE MONGO SCHEMAS ---
+// --- MONGOOSE SCHEMAS ---
 const MongooseCustomerSchema = new mongoose.Schema<ICustomer>({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
+  city: { type: String, default: 'Delhi' },
   totalSpend: { type: Number, default: 0 },
   lastOrderDate: { type: String, default: null },
   createdAt: { type: String, default: () => new Date().toISOString() }
@@ -74,6 +89,14 @@ const MongooseOrderSchema = new mongoose.Schema<IOrder>({
   price: { type: Number, required: true },
   quantity: { type: Number, default: 1 },
   orderDate: { type: String, default: () => new Date().toISOString() }
+});
+
+const MongooseSegmentSchema = new mongoose.Schema<ISegment>({
+  name: { type: String, required: true },
+  description: { type: String, default: '' },
+  audienceCriteria: { type: Object, default: {} },
+  audienceSize: { type: Number, default: 0 },
+  createdAt: { type: String, default: () => new Date().toISOString() }
 });
 
 const MongooseCampaignSchema = new mongoose.Schema<ICampaign>({
@@ -109,17 +132,20 @@ const MongooseCampaignLogSchema = new mongoose.Schema<ICampaignLog>({
 // Models for Mongoose
 let CustomerModel: mongoose.Model<ICustomer>;
 let OrderModel: mongoose.Model<IOrder>;
+let SegmentModel: mongoose.Model<ISegment>;
 let CampaignModel: mongoose.Model<ICampaign>;
 let CampaignLogModel: mongoose.Model<ICampaignLog>;
 
 try {
   CustomerModel = mongoose.model<ICustomer>('Customer', MongooseCustomerSchema);
   OrderModel = mongoose.model<IOrder>('Order', MongooseOrderSchema);
+  SegmentModel = mongoose.model<ISegment>('Segment', MongooseSegmentSchema);
   CampaignModel = mongoose.model<ICampaign>('Campaign', MongooseCampaignSchema);
   CampaignLogModel = mongoose.model<ICampaignLog>('CampaignLog', MongooseCampaignLogSchema);
 } catch (e) {
   CustomerModel = mongoose.models.Customer as mongoose.Model<ICustomer>;
   OrderModel = mongoose.models.Order as mongoose.Model<IOrder>;
+  SegmentModel = mongoose.models.Segment as mongoose.Model<ISegment>;
   CampaignModel = mongoose.models.Campaign as mongoose.Model<ICampaign>;
   CampaignLogModel = mongoose.models.CampaignLog as mongoose.Model<ICampaignLog>;
 }
@@ -131,12 +157,13 @@ class JSONStore {
   private data: {
     customers: ICustomer[];
     orders: IOrder[];
+    segments: ISegment[];
     campaigns: ICampaign[];
     campaignLogs: ICampaignLog[];
   };
 
   constructor() {
-    this.data = { customers: [], orders: [], campaigns: [], campaignLogs: [] };
+    this.data = { customers: [], orders: [], segments: [], campaigns: [], campaignLogs: [] };
     this.load();
   }
 
@@ -145,6 +172,8 @@ class JSONStore {
       try {
         const fileContent = fs.readFileSync(DATASTORE_PATH, 'utf8');
         this.data = JSON.parse(fileContent);
+        // Ensure new array elements exist
+        if (!this.data.segments) this.data.segments = [];
       } catch (err) {
         console.error('[JSONDB] Error loading datastore.json, initializing empty data.', err);
       }
@@ -169,6 +198,7 @@ class JSONStore {
         if (query) {
           if (query._id) results = results.filter(c => c._id === query._id);
           if (query.email) results = results.filter(c => c.email === query.email);
+          if (query.city) results = results.filter(c => c.city === query.city);
         }
         return results;
       },
@@ -181,6 +211,7 @@ class JSONStore {
           name: doc.name || 'Unknown',
           email: doc.email || '',
           phone: doc.phone || '',
+          city: doc.city || 'Delhi',
           totalSpend: doc.totalSpend || 0,
           lastOrderDate: doc.lastOrderDate || null,
           createdAt: doc.createdAt || new Date().toISOString(),
@@ -229,6 +260,33 @@ class JSONStore {
       },
       clear: async () => {
         this.data.orders = [];
+        this.save();
+      }
+    };
+  }
+
+  // Segments Repo
+  get segments() {
+    return {
+      find: async (): Promise<ISegment[]> => {
+        return this.data.segments || [];
+      },
+      create: async (doc: Partial<ISegment>): Promise<ISegment> => {
+        const newDoc: ISegment = {
+          _id: new mongoose.Types.ObjectId().toString(),
+          name: doc.name || 'New Segment',
+          description: doc.description || '',
+          audienceCriteria: doc.audienceCriteria || {},
+          audienceSize: doc.audienceSize || 0,
+          createdAt: new Date().toISOString()
+        };
+        if (!this.data.segments) this.data.segments = [];
+        this.data.segments.push(newDoc);
+        this.save();
+        return newDoc;
+      },
+      clear: async () => {
+        this.data.segments = [];
         this.save();
       }
     };
@@ -376,11 +434,9 @@ export const db = {
     create: async (doc: Partial<IOrder>): Promise<IOrder> => {
       if (isConnectedToMongo) {
         const newDoc = await OrderModel.create(doc);
-        // Also update customer aggregates
         await db.customers.updateSpendAndLastOrder(doc.customerId!, doc.price! * (doc.quantity || 1), doc.orderDate || new Date().toISOString());
         return newDoc.toObject();
       }
-      // For JSON store, update customer aggregates
       const order = await localStore.orders.create(doc);
       await db.customers.updateSpendAndLastOrder(doc.customerId!, doc.price! * (doc.quantity || 1), doc.orderDate || new Date().toISOString());
       return order;
@@ -390,6 +446,30 @@ export const db = {
         await OrderModel.deleteMany({});
       } else {
         await localStore.orders.clear();
+      }
+    }
+  },
+
+  // Segments Repo
+  segments: {
+    find: async (): Promise<ISegment[]> => {
+      if (isConnectedToMongo) {
+        return await SegmentModel.find().sort({ createdAt: -1 }).lean();
+      }
+      return await localStore.segments.find();
+    },
+    create: async (doc: Partial<ISegment>): Promise<ISegment> => {
+      if (isConnectedToMongo) {
+        const newDoc = await SegmentModel.create(doc);
+        return newDoc.toObject();
+      }
+      return await localStore.segments.create(doc);
+    },
+    clear: async (): Promise<void> => {
+      if (isConnectedToMongo) {
+        await SegmentModel.deleteMany({});
+      } else {
+        await localStore.segments.clear();
       }
     }
   },
@@ -466,22 +546,33 @@ async function proactiveSeed() {
     
     console.log('🌱 [DB] Customer database is empty. Proactively seeding mock customers to prevent empty segments...');
     
+    // 15 customers seeded with specific city distributions to match Screenshot 1 top cities
+    // Cities: Bangalore (5), Hyderabad (3.5/4), Lucknow (3), Chandigarh (3), Delhi (3)
     const seedData = [
-      { name: 'Rahul Sharma', email: 'rahul.sharma@example.com', phone: '+919876543210', lastOrderDays: 45, orders: [{ item: 'Cappuccino', price: 250 }, { item: 'Chocolate Muffin', price: 180 }] },
-      { name: 'Priya Patel', email: 'priya.patel@example.com', phone: '+919123456789', lastOrderDays: 1, orders: [{ item: 'Cold Brew Coffee', price: 220 }, { item: 'Avocado Toast', price: 350 }] },
-      { name: 'Aman Verma', email: 'aman.verma@example.com', phone: '+918888888888', lastOrderDays: 50, orders: [{ item: 'Air Jordan Sneakers', price: 9500 }] },
-      { name: 'Sneha Reddy', email: 'sneha.reddy@example.com', phone: '+917777777777', lastOrderDays: 12, orders: [{ item: 'Latte', price: 280 }] },
-      { name: 'Vikram Singh', email: 'vikram.singh@example.com', phone: '+919999999999', lastOrderDays: 90, orders: [{ item: 'Nike Pegasus Running Shoes', price: 7500 }] },
-      { name: 'Ananya Sen', email: 'ananya.sen@example.com', phone: '+919444455555', lastOrderDays: 3, orders: [{ item: 'Espresso Macchiato', price: 210 }, { item: 'Croissant', price: 150 }] },
-      { name: 'Rohan Gupta', email: 'rohan.gupta@example.com', phone: '+918222233333', lastOrderDays: 32, orders: [{ item: 'Adidas Ultraboost Sneakers', price: 8900 }] },
-      { name: 'Meera Joshi', email: 'meera.joshi@example.com', phone: '+919111122222', lastOrderDays: 15, orders: [{ item: 'Filter Coffee', price: 120 }, { item: 'Paneer Puff', price: 80 }] },
-      { name: 'Kabir Malhotra', email: 'kabir.m@example.com', phone: '+919555566666', lastOrderDays: 60, orders: [{ item: 'Iced Latte', price: 260 }] },
-      { name: 'Zara Khan', email: 'zara.khan@example.com', phone: '+919666677777', lastOrderDays: 2, orders: [{ item: 'Puma Suede Sneakers', price: 4500 }] },
-      { name: 'Aditya Rao', email: 'aditya.rao@example.com', phone: '+919777788888', lastOrderDays: 25, orders: [{ item: 'Cappuccino', price: 250 }] },
-      { name: 'Divya Nair', email: 'divya.nair@example.com', phone: '+919888899999', lastOrderDays: 120, orders: [{ item: 'Cold Brew Coffee', price: 220 }] },
-      { name: 'Siddharth Roy', email: 'sid.roy@example.com', phone: '+919000011111', lastOrderDays: 5, orders: [{ item: 'Nike Pegasus Running Shoes', price: 7500 }, { item: 'Socks Pack', price: 600 }] },
-      { name: 'Tanvi Shah', email: 'tanvi.shah@example.com', phone: '+919111133333', lastOrderDays: 70, orders: [{ item: 'Latte', price: 280 }] },
-      { name: 'Varun Das', email: 'varun.das@example.com', phone: '+919222244444', lastOrderDays: 8, orders: [{ item: 'Filter Coffee', price: 120 }] },
+      { name: 'Rahul Sharma', email: 'rahul.sharma@example.com', phone: '+919876543210', city: 'Bangalore', lastOrderDays: 45, orders: [{ item: 'Cappuccino', price: 250 }, { item: 'Chocolate Muffin', price: 180 }] },
+      { name: 'Priya Patel', email: 'priya.patel@example.com', phone: '+919123456789', city: 'Hyderabad', lastOrderDays: 1, orders: [{ item: 'Cold Brew Coffee', price: 220 }, { item: 'Avocado Toast', price: 350 }] },
+      { name: 'Aman Verma', email: 'aman.verma@example.com', phone: '+918888888888', city: 'Lucknow', lastOrderDays: 50, orders: [{ item: 'Air Jordan Sneakers', price: 9500 }] },
+      { name: 'Sneha Reddy', email: 'sneha.reddy@example.com', phone: '+917777777777', city: 'Chandigarh', lastOrderDays: 12, orders: [{ item: 'Latte', price: 280 }] },
+      { name: 'Vikram Singh', email: 'vikram.singh@example.com', phone: '+919999999999', city: 'Delhi', lastOrderDays: 90, orders: [{ item: 'Nike Pegasus Running Shoes', price: 7500 }] },
+      
+      { name: 'Ananya Sen', email: 'ananya.sen@example.com', phone: '+919444455555', city: 'Bangalore', lastOrderDays: 3, orders: [{ item: 'Espresso Macchiato', price: 210 }, { item: 'Croissant', price: 150 }] },
+      { name: 'Rohan Gupta', email: 'rohan.gupta@example.com', phone: '+918222233333', city: 'Hyderabad', lastOrderDays: 32, orders: [{ item: 'Adidas Ultraboost Sneakers', price: 8900 }] },
+      { name: 'Meera Joshi', email: 'meera.joshi@example.com', phone: '+919111122222', city: 'Lucknow', lastOrderDays: 15, orders: [{ item: 'Filter Coffee', price: 120 }, { item: 'Paneer Puff', price: 80 }] },
+      { name: 'Kabir Malhotra', email: 'kabir.m@example.com', phone: '+919555566666', city: 'Chandigarh', lastOrderDays: 60, orders: [{ item: 'Iced Latte', price: 260 }] },
+      { name: 'Zara Khan', email: 'zara.khan@example.com', phone: '+919666677777', city: 'Delhi', lastOrderDays: 2, orders: [{ item: 'Puma Suede Sneakers', price: 4500 }] },
+      
+      { name: 'Aditya Rao', email: 'aditya.rao@example.com', phone: '+919777788888', city: 'Bangalore', lastOrderDays: 25, orders: [{ item: 'Cappuccino', price: 250 }] },
+      { name: 'Divya Nair', email: 'divya.nair@example.com', phone: '+919888899999', city: 'Hyderabad', lastOrderDays: 120, orders: [{ item: 'Cold Brew Coffee', price: 220 }] },
+      { name: 'Siddharth Roy', email: 'sid.roy@example.com', phone: '+919000011111', city: 'Lucknow', lastOrderDays: 5, orders: [{ item: 'Nike Pegasus Running Shoes', price: 7500 }, { item: 'Socks Pack', price: 600 }] },
+      { name: 'Tanvi Shah', email: 'tanvi.shah@example.com', phone: '+919111133333', city: 'Chandigarh', lastOrderDays: 70, orders: [{ item: 'Latte', price: 280 }] },
+      { name: 'Varun Das', email: 'varun.das@example.com', phone: '+919222244444', city: 'Delhi', lastOrderDays: 8, orders: [{ item: 'Filter Coffee', price: 120 }] },
+
+      // Add extra to make Bangalore city count = 24 scale, and total customers look substantial
+      { name: 'Karthik Raja', email: 'karthik.r@example.com', phone: '+919000122222', city: 'Bangalore', lastOrderDays: 10, orders: [{ item: 'Latte', price: 280 }] },
+      { name: 'Megha Rao', email: 'megha.r@example.com', phone: '+919000133333', city: 'Bangalore', lastOrderDays: 4, orders: [{ item: 'Espresso', price: 180 }] },
+      { name: 'Suresh Kumar', email: 'suresh.k@example.com', phone: '+919000144444', city: 'Bangalore', lastOrderDays: 20, orders: [{ item: 'Filter Coffee', price: 120 }] },
+      { name: 'Lata Mangesh', email: 'lata.m@example.com', phone: '+919000155555', city: 'Hyderabad', lastOrderDays: 33, orders: [{ item: 'Cappuccino', price: 250 }] },
+      { name: 'Harish Kalyan', email: 'harish.k@example.com', phone: '+919000166666', city: 'Delhi', lastOrderDays: 4, orders: [{ item: 'Cold Brew Coffee', price: 220 }] }
     ];
     
     const now = new Date();
@@ -496,6 +587,7 @@ async function proactiveSeed() {
         name: item.name,
         email: item.email,
         phone: item.phone,
+        city: item.city,
         totalSpend: 0,
         lastOrderDate: null,
       });
@@ -511,7 +603,23 @@ async function proactiveSeed() {
         });
       }
     }
-    console.log('✅ [DB] Proactive database seeding completed. 15 profiles loaded.');
+    
+    // Seed default segments
+    await db.segments.create({
+      name: 'Coffee Winback Segment',
+      description: 'Shoppers who bought coffee items and spent over ₹500 but are inactive for 30+ days',
+      audienceCriteria: { totalSpendMin: 500, lastOrderDaysAgo: 30 },
+      audienceSize: 2
+    });
+
+    await db.segments.create({
+      name: 'Premium Sneaker VIPs',
+      description: 'High-value shoppers who spent above ₹5000 on premium footwear',
+      audienceCriteria: { totalSpendMin: 5000 },
+      audienceSize: 3
+    });
+
+    console.log('✅ [DB] Proactive database seeding completed. 20 profiles and 2 segments loaded.');
   } catch (err: any) {
     console.error('❌ [DB] Proactive seeding failed:', err.message);
   }
