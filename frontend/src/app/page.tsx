@@ -61,42 +61,42 @@ const TopLocationsCard = () => {
           {/* North America */}
           <path 
             d="M16 22 L40 20 L58 30 L48 48 L42 50 L34 58 L32 54 L22 52 L20 40 Z" 
-            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+            className="fill-pink-200/40 dark:fill-white/5 stroke-pink-300/30 dark:stroke-white/5 transition-colors duration-300"
           />
           {/* Greenland */}
           <path 
             d="M58 8 L68 10 L66 18 L60 16 Z" 
-            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+            className="fill-pink-200/40 dark:fill-white/5 stroke-pink-300/30 dark:stroke-white/5 transition-colors duration-300"
           />
           {/* South America */}
           <path 
             d="M34 58 L42 60 L38 68 L46 78 L44 95 L40 108 L36 104 L32 80 L28 66 Z" 
-            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+            className="fill-pink-200/40 dark:fill-white/5 stroke-pink-300/30 dark:stroke-white/5 transition-colors duration-300"
           />
           {/* Africa */}
           <path 
             d="M90 54 L108 52 L118 58 L124 64 L128 76 L122 88 L116 96 L110 92 L106 82 L102 70 L92 64 Z" 
-            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+            className="fill-pink-200/40 dark:fill-white/5 stroke-pink-300/30 dark:stroke-white/5 transition-colors duration-300"
           />
           {/* Europe */}
           <path 
             d="M82 26 L98 24 L104 34 L100 44 L90 46 L86 40 Z" 
-            className="fill-text-tertiary/10 dark:fill-white/5 stroke-none transition-colors duration-300"
+            className="fill-pink-200/40 dark:fill-white/5 stroke-pink-300/30 dark:stroke-white/5 transition-colors duration-300"
           />
           {/* Asia */}
           <path 
             d="M98 24 L145 22 L165 30 L170 48 L160 58 L148 60 L142 54 L132 56 L124 52 L116 54 L106 44 L104 38 Z" 
-            className={`transition-colors duration-300 stroke-none ${
+            className={`transition-colors duration-300 stroke-pink-300/30 dark:stroke-white/5 ${
               hoveredLoc === 'india' || hoveredLoc === 'singapore' || hoveredLoc === 'indonesia'
-                ? 'fill-accent-violet/10 dark:fill-accent-violet/15' 
-                : 'fill-text-tertiary/10 dark:fill-white/5'
+                ? 'fill-accent-violet/20 dark:fill-accent-violet/25' 
+                : 'fill-pink-200/40 dark:fill-white/5'
             }`}
           />
           {/* Australia & Oceania */}
           <path 
             d="M196 85 L218 85 L222 96 L212 104 L196 98 Z" 
-            className={`transition-colors duration-300 stroke-none ${
-              hoveredLoc === 'australia' ? 'fill-sky-500/20 dark:fill-sky-400/20' : 'fill-text-tertiary/10 dark:fill-white/5'
+            className={`transition-colors duration-300 stroke-pink-300/30 dark:stroke-white/5 ${
+              hoveredLoc === 'australia' ? 'fill-sky-500/30 dark:fill-sky-400/30' : 'fill-pink-200/40 dark:fill-white/5'
             }`} 
           />
 
