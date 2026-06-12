@@ -812,7 +812,7 @@ export default function Home() {
               {/* 4 Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {/* Total Customers */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-card-pop">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-top">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Customers</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -830,7 +830,7 @@ export default function Home() {
                 </div>
 
                 {/* Total Revenue */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-card-pop delay-75">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-top delay-75">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Total Revenue</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -845,7 +845,7 @@ export default function Home() {
                 </div>
 
                 {/* Campaigns Sent */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-card-pop delay-150">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-top delay-150">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Campaigns Sent</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -863,7 +863,7 @@ export default function Home() {
                 </div>
 
                 {/* Segments */}
-                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-card-pop delay-200">
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-top delay-200">
                   <div className="space-y-2">
                     <span className="text-[10px] text-text-tertiary uppercase font-bold block">Segments</span>
                     <span className="text-2xl font-black text-text-primary block">
@@ -881,7 +881,7 @@ export default function Home() {
               {/* Row with Revenue Timeline & Top Cities */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 {/* Revenue Timeline (2/3) */}
-                <div className="lg:col-span-8 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300 animate-slide-in-bottom delay-300">
+                <div className="lg:col-span-8 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300 animate-slide-in-top delay-300">
                   <div className="mb-4">
                     <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
                       Revenue Timeline
@@ -897,7 +897,7 @@ export default function Home() {
                 </div>
 
                 {/* Top Customer Locations (1/3) */}
-                <div className="lg:col-span-4 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300 animate-slide-in-bottom delay-400">
+                <div className="lg:col-span-4 glass-panel p-5 flex flex-col justify-between hover:shadow-lg hover:shadow-accent-violet/5 hover:border-accent-violet/10 transition-all duration-300 animate-slide-in-top delay-400">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
                       Top Customer Locations
@@ -913,7 +913,7 @@ export default function Home() {
               </div>
 
               {/* Bottom Section: AI Campaign Suggestions */}
-              <div className="glass-panel p-5 space-y-4 animate-slide-in-bottom delay-500">
+              <div className="glass-panel p-5 space-y-4 animate-slide-in-top delay-500">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="bg-violet-500/10 text-violet-400 p-2 rounded-lg mt-0.5 animate-pulse">
