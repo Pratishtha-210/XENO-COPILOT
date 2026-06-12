@@ -32,12 +32,12 @@ An AI-native Marketing Engagement CRM and Shopper Segmentation platform built fo
 ```text
 XENO/
 ├── backend/
-│   ├── crm-core/                   # CRM Core Backend (Port 5000)
-│   │   ├── src/db/connection.ts    # Mongoose schemas & JSON DB Repository
-│   │   ├── src/services/aiService  # Gemini Live & Local Mock AI Parser
-│   │   └── src/routes/api.ts       # REST Ingestion, Campaigns & Callback routes
-│   └── channel-simulator/          # Channel Simulator Service (Port 5001)
-│       └── src/index.ts            # Delayed callback loops mimicking brokers
+│   └── crm-core/                   # CRM Core Backend (Port 5000)
+│       ├── src/db/connection.ts    # Mongoose schemas & JSON DB Repository
+│       ├── src/services/aiService  # Gemini Live & Local Mock AI Parser
+│       └── src/routes/api.ts       # REST Ingestion, Campaigns & Callback routes
+├── channel-service/                # Channel Simulator Service (Port 5001)
+│   └── src/index.ts                # Delayed callback loops mimicking brokers
 └── frontend/                       # Next.js 16 Client App (Port 3000)
     ├── src/app/page.tsx            # Main tabbed workspace layout
     ├── src/lib/api.ts              # API HTTP contracts
@@ -57,7 +57,7 @@ GEMINI_API_KEY=
 SIMULATOR_URL=http://localhost:5001
 ```
 
-Create a `.env` file inside `backend/channel-simulator`:
+Create a `.env` file inside `channel-service`:
 ```env
 PORT=5001
 ```
@@ -67,7 +67,7 @@ Launch each service in a separate terminal:
 
 **Terminal 1: Channel Simulator**
 ```bash
-cd backend/channel-simulator
+cd channel-service
 npm install
 npm run dev
 ```
