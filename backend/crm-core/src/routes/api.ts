@@ -199,7 +199,8 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
       failedCount: 0
     });
 
-    const callbackUrl = `http://localhost:5000/api/campaigns/${campaignId}/callback`;
+    const coreUrl = process.env.CORE_URL || 'http://localhost:5000';
+    const callbackUrl = `${coreUrl}/api/campaigns/${campaignId}/callback`;
     const recipientsToSend = [];
 
     for (const customer of targetCustomers) {
@@ -329,6 +330,18 @@ router.post('/segments', async (req: Request, res: Response) => {
       audienceSize: matched.length
     });
     res.status(201).json(segment);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 8b. Campaign Logs endpoint
+router.get('/logs', async (req: Request, res: Response) => {
+  const { customerId } = req.query;
+  try {
+    const query = customerId ? { customerId: customerId as string } : {};
+    const logs = await db.campaignLogs.find(query);
+    res.json(logs);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { api, Customer, Campaign, CampaignLog, DashboardAnalytics, Segment } from '../lib/api';
 
-type TabType = 'dashboard' | 'campaigns' | 'segments' | 'audience';
+type TabType = 'dashboard' | 'campaigns' | 'segments' | 'audience' | 'inbox';
 
 interface LocationItem {
   id: string;
@@ -361,6 +361,33 @@ export default function Home() {
   const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
   const [globalWarning, setGlobalWarning] = useState<string | null>(null);
 
+  // Message Simulator State
+  const [selectedInboxCustomer, setSelectedInboxCustomer] = useState<Customer | null>(null);
+  const [inboxSearchQuery, setInboxSearchQuery] = useState('');
+  const [inboxTab, setInboxTab] = useState<'whatsapp' | 'email'>('whatsapp');
+  const [inboxLogs, setInboxLogs] = useState<CampaignLog[]>([]);
+
+  // Load logs for Message Simulator
+  useEffect(() => {
+    if (!selectedInboxCustomer) {
+      setInboxLogs([]);
+      return;
+    }
+    const loadInboxLogs = async () => {
+      try {
+        const logs = await api.getCampaignLogs(selectedInboxCustomer._id);
+        setInboxLogs(logs);
+      } catch (err) {
+        console.error('Error fetching logs for inbox', err);
+      }
+    };
+    loadInboxLogs();
+    
+    // Poll logs periodically so they refresh as callbacks fire
+    const interval = setInterval(loadInboxLogs, 2000);
+    return () => clearInterval(interval);
+  }, [selectedInboxCustomer]);
+
   // Initialize theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('xeno-theme') as 'dark' | 'light';
@@ -450,6 +477,9 @@ export default function Home() {
       const custData = await api.getCustomers();
       setCustomers(custData.customers);
       setDbMode(custData.databaseMode);
+      if (custData.customers.length > 0) {
+        setSelectedInboxCustomer(prev => prev || custData.customers[0]);
+      }
       await fetchAnalyticsAndCampaigns();
     } catch (err: any) {
       setGlobalError('Could not connect to CRM backend service. Make sure it is running on Port 5000.');
@@ -492,6 +522,9 @@ export default function Home() {
       const custData = await api.getCustomers();
       setCustomers(custData.customers);
       setDbMode(custData.databaseMode);
+      if (custData.customers.length > 0) {
+        setSelectedInboxCustomer(custData.customers[0]);
+      }
       await fetchAnalyticsAndCampaigns();
     } catch (err: any) {
       setGlobalError('Failed to seed database: ' + err.message);
@@ -750,6 +783,18 @@ export default function Home() {
             >
               <Users className={`w-3.5 h-3.5 ${activeTab === 'audience' ? 'text-violet-400' : 'text-gray-400'}`} />
               Audience Base
+            </button>
+
+            <button
+              onClick={() => setActiveTab('inbox')}
+              className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'inbox'
+                  ? 'bg-white/5 text-violet-400 border border-white/5'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+              }`}
+            >
+              <MessageSquare className={`w-3.5 h-3.5 ${activeTab === 'inbox' ? 'text-violet-400' : 'text-gray-400'}`} />
+              Message Simulator
             </button>
           </nav>
         </div>
@@ -1899,6 +1944,395 @@ export default function Home() {
                   )}
                 </div>
               </div>
+
+            </div>
+          )}
+
+          {/* TAB 4: MESSAGE SIMULATOR (FAKE INBOX) */}
+          {activeTab === 'inbox' && (
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden animate-slide-in-bottom h-full">
+              
+              {/* Header section */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight text-gradient flex items-center gap-2">
+                    <MessageSquare className="w-6 h-6 text-accent-violet" />
+                    Customer Message Simulator
+                  </h2>
+                  <p className="text-text-secondary text-xs mt-1">
+                    Simulate how WhatsApp and Email communications are received by shoppers and trigger customer interaction events.
+                  </p>
+                </div>
+              </div>
+
+              {customers.length === 0 ? (
+                <div className="glass-panel flex-1 flex flex-col items-center justify-center p-20 text-center">
+                  <Users className="w-12 h-12 text-text-tertiary mb-3 animate-pulse" />
+                  <h3 className="text-sm font-bold text-text-secondary">No customers available</h3>
+                  <p className="text-xs text-text-tertiary mt-2 max-w-sm">
+                    Seed the sandbox database first to retrieve customer profiles and test message simulator deliveries.
+                  </p>
+                  <button
+                    onClick={handleSeedDatabase}
+                    disabled={isSeeding}
+                    className="mt-6 bg-gradient-to-r from-accent-violet to-accent-indigo text-white font-bold text-xs py-2 px-6 rounded-lg shadow-lg cursor-pointer"
+                  >
+                    {isSeeding ? 'Seeding...' : 'Seed Database'}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-[500px]">
+                  
+                  {/* Left panel: Customer Selector */}
+                  <div className="glass-panel w-full lg:w-80 flex flex-col overflow-hidden shrink-0">
+                    <div className="p-4 border-b border-card-border bg-black/10">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-text-tertiary absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          placeholder="Search inbox..."
+                          value={inboxSearchQuery}
+                          onChange={(e) => setInboxSearchQuery(e.target.value)}
+                          className="w-full bg-input-bg border border-card-border rounded-lg pl-8.5 pr-3 py-1.5 text-xs text-text-primary placeholder-text-tertiary focus:outline-none focus:border-accent-violet/50"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto divide-y divide-card-border/50">
+                      {customers
+                        .filter(c => c.name.toLowerCase().includes(inboxSearchQuery.toLowerCase()) || c.email.toLowerCase().includes(inboxSearchQuery.toLowerCase()))
+                        .map((c) => {
+                          const isSelected = selectedInboxCustomer?._id === c._id;
+                          const initial = c.name.charAt(0);
+                          
+                          return (
+                            <button
+                              key={c._id}
+                              onClick={() => setSelectedInboxCustomer(c)}
+                              className={`w-full p-4 flex items-center gap-3.5 text-left transition-all hover:bg-white/[0.02] cursor-pointer ${
+                                isSelected ? 'bg-white/5 border-l-3 border-accent-violet' : ''
+                              }`}
+                            >
+                              <div className={`w-8.5 h-8.5 rounded-full flex items-center justify-center font-black text-xs shrink-0 ${
+                                isSelected 
+                                  ? 'bg-gradient-to-tr from-accent-violet to-accent-indigo text-white' 
+                                  : 'bg-white/5 text-text-secondary border border-card-border'
+                              }`}>
+                                {initial}
+                              </div>
+                              <div className="overflow-hidden">
+                                <div className="text-xs font-bold text-text-primary truncate">{c.name}</div>
+                                <div className="text-[10px] text-text-tertiary truncate mt-0.5">{c.email}</div>
+                                <div className="text-[9px] text-text-tertiary truncate mt-0.5">{c.city} • Total Spend: ₹{c.totalSpend}</div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  {/* Right panel: Simulator view */}
+                  <div className="glass-panel flex-1 flex flex-col overflow-hidden">
+                    {selectedInboxCustomer ? (
+                      <>
+                        {/* Header Details */}
+                        <div className="p-4 border-b border-card-border flex flex-col md:flex-row md:items-center justify-between gap-4 bg-black/15">
+                          <div>
+                            <div className="text-sm font-bold text-text-primary flex items-center gap-2">
+                              {selectedInboxCustomer.name}
+                              <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded border border-card-border text-text-tertiary">
+                                {selectedInboxCustomer.city}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-text-tertiary mt-1">
+                              Phone: {selectedInboxCustomer.phone} | Email: {selectedInboxCustomer.email}
+                            </div>
+                          </div>
+
+                          {/* Channel Tabs */}
+                          <div className="flex bg-white/5 p-0.5 rounded-lg border border-card-border shrink-0">
+                            <button
+                              onClick={() => setInboxTab('whatsapp')}
+                              className={`px-3.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                inboxTab === 'whatsapp'
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : 'text-text-tertiary hover:text-text-secondary'
+                              }`}
+                            >
+                              💬 WhatsApp Chat
+                            </button>
+                            <button
+                              onClick={() => setInboxTab('email')}
+                              className={`px-3.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                inboxTab === 'email'
+                                  ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
+                                  : 'text-text-tertiary hover:text-text-secondary'
+                              }`}
+                            >
+                              📧 Email Client
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* WhatsApp Tab View */}
+                        {inboxTab === 'whatsapp' && (
+                          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                            {/* Chat bubble screen area */}
+                            <div className="flex-1 flex flex-col bg-[#0b141a]/95 overflow-hidden border-b md:border-b-0 md:border-r border-card-border">
+                              
+                              {/* Chat history list */}
+                              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3.5 scrollbar-thin">
+                                {inboxLogs.filter(l => l.status !== 'failed').length === 0 ? (
+                                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
+                                      <MessageSquare className="w-6 h-6 text-text-tertiary" />
+                                    </div>
+                                    <h4 className="text-xs font-semibold text-text-secondary">No WhatsApp messages</h4>
+                                    <p className="text-[10px] text-text-tertiary mt-1 max-w-xs leading-normal">
+                                      Launch an AI or manual campaign on the WhatsApp channel targeting this customer to see simulated messages here.
+                                    </p>
+                                  </div>
+                                ) : (
+                                  inboxLogs
+                                    .filter(l => l.status !== 'failed')
+                                    .map((log) => (
+                                      <div key={log._id} className="flex flex-col max-w-[85%] self-end">
+                                        <div className="bg-[#005c4b] text-[#e9edef] rounded-lg rounded-tr-none px-3.5 py-2 text-xs shadow-md relative leading-relaxed">
+                                          {/* Message Body */}
+                                          <div className="whitespace-pre-line pr-10">{log.customMessage}</div>
+                                          
+                                          {/* Time and Ticks */}
+                                          <div className="absolute bottom-1 right-2 flex items-center gap-1 text-[9px] text-white/50 select-none">
+                                            <span>
+                                              {new Date(log.sentAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                            </span>
+                                            {/* Status Ticks */}
+                                            {log.status === 'sent' && (
+                                              <span className="text-gray-400">✓</span>
+                                            )}
+                                            {log.status === 'delivered' && (
+                                              <span className="text-gray-400">✓✓</span>
+                                            )}
+                                            {(log.status === 'opened' || log.status === 'clicked') && (
+                                              <span className="text-emerald-400 font-bold">✓✓</span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Click Link Status Badge */}
+                                        {log.status === 'clicked' && (
+                                          <div className="self-end mt-1 text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-black tracking-wider uppercase">
+                                            🔗 Link Clicked
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Simulation Controller Panel */}
+                            <div className="w-full md:w-72 p-4 flex flex-col bg-black/10 shrink-0 overflow-y-auto">
+                              <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider border-b border-card-border pb-2 flex items-center gap-1.5">
+                                <Activity className="w-3.5 h-3.5 text-accent-violet" />
+                                Simulate Events
+                              </h3>
+                              
+                              <div className="flex-1 flex flex-col gap-4.5 mt-4">
+                                {inboxLogs.length === 0 ? (
+                                  <p className="text-[10px] text-text-tertiary leading-normal">
+                                    No active simulation available. Send a campaign targeting {selectedInboxCustomer.name} to start simulating the lifecycle.
+                                  </p>
+                                ) : (
+                                  inboxLogs.map((log) => {
+                                    return (
+                                      <div key={log._id} className="p-3 bg-white/[0.02] border border-card-border rounded-lg flex flex-col gap-2">
+                                        <div className="text-[10px] font-bold text-text-primary truncate">
+                                          Message Ref: {log._id.slice(-6)}
+                                        </div>
+                                        <div className="flex items-center justify-between text-[9px]">
+                                          <span className="text-text-tertiary">Status:</span>
+                                          <span className={`px-1.5 py-0.5 rounded uppercase font-black border tracking-wider ${
+                                            log.status === 'sent' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                            log.status === 'delivered' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                            log.status === 'opened' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                            log.status === 'clicked' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
+                                            'bg-red-500/10 text-red-400 border-red-500/20'
+                                          }`}>
+                                            {log.status}
+                                          </span>
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        <div className="flex flex-col gap-1.5 mt-1.5">
+                                          {log.status === 'sent' && (
+                                            <button
+                                              onClick={() => api.triggerStatusCallback(log.campaignId, log.customerId, 'delivered')}
+                                              className="w-full bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 text-[9px] font-bold py-1 px-2 rounded cursor-pointer transition-all text-center"
+                                            >
+                                              Simulate Delivery (✓✓)
+                                            </button>
+                                          )}
+                                          {log.status === 'delivered' && (
+                                            <button
+                                              onClick={() => api.triggerStatusCallback(log.campaignId, log.customerId, 'opened')}
+                                              className="w-full bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 text-[9px] font-bold py-1 px-2 rounded cursor-pointer transition-all text-center"
+                                            >
+                                              Simulate Open (✓✓ blue)
+                                            </button>
+                                          )}
+                                          {log.status === 'opened' && (
+                                            <button
+                                              onClick={() => api.triggerStatusCallback(log.campaignId, log.customerId, 'clicked')}
+                                              className="w-full bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 text-[9px] font-bold py-1 px-2 rounded cursor-pointer transition-all text-center"
+                                            >
+                                              Simulate Link Click (🔗)
+                                            </button>
+                                          )}
+                                          {log.status === 'clicked' && (
+                                            <div className="text-[9px] text-text-tertiary text-center italic mt-1 bg-white/5 py-1 rounded">
+                                              Lifecycle Complete
+                                            </div>
+                                          )}
+                                          {log.status === 'failed' && (
+                                            <div className="text-[9px] text-red-400 text-center italic mt-1">
+                                              Delivery failed. Check CRM logs.
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Email Tab View */}
+                        {inboxTab === 'email' && (
+                          <div className="flex-1 flex overflow-hidden">
+                            <div className="flex-1 flex flex-col bg-white/[0.01] overflow-hidden">
+                              {inboxLogs.filter(l => l.status !== 'failed').length === 0 ? (
+                                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                                  <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
+                                    <Mail className="w-6 h-6 text-text-tertiary" />
+                                  </div>
+                                  <h4 className="text-xs font-semibold text-text-secondary">No emails received</h4>
+                                  <p className="text-[10px] text-text-tertiary mt-1 max-w-xs leading-normal">
+                                    Launch an AI or manual campaign on the Email channel targeting this customer to see simulated emails here.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="flex-1 flex flex-col overflow-y-auto p-5 gap-5">
+                                  {inboxLogs
+                                    .filter(l => l.status !== 'failed')
+                                    .map((log) => {
+                                      const lines = log.customMessage.split('\n');
+                                      let subject = `Campaign Broadcast`;
+                                      let body = log.customMessage;
+
+                                      if (lines[0] && lines[0].toLowerCase().startsWith('subject:')) {
+                                        subject = lines[0].replace(/subject:/i, '').trim();
+                                        body = lines.slice(1).join('\n').trim();
+                                      }
+
+                                      return (
+                                        <div key={log._id} className="bg-white/[0.02] border border-card-border rounded-xl p-5 flex flex-col gap-4 relative shadow-lg">
+                                          
+                                          {/* Status Indicator */}
+                                          <div className="absolute top-4 right-4 flex items-center gap-2">
+                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black border uppercase tracking-wider ${
+                                              log.status === 'sent' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                              log.status === 'delivered' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                              log.status === 'opened' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                              log.status === 'clicked' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
+                                              'bg-red-500/10 text-red-400 border-red-500/20'
+                                            }`}>
+                                              {log.status}
+                                            </span>
+                                          </div>
+
+                                          {/* Email Header */}
+                                          <div className="border-b border-card-border pb-3 flex flex-col gap-1.5">
+                                            <div className="text-xs font-bold text-text-primary">
+                                              Subject: {subject}
+                                            </div>
+                                            <div className="text-[10px] text-text-secondary mt-1">
+                                              From: <span className="font-semibold text-accent-violet">reachai-campaigns@brand.com</span>
+                                            </div>
+                                            <div className="text-[10px] text-text-tertiary">
+                                              To: {selectedInboxCustomer.email}
+                                            </div>
+                                            <div className="text-[9px] text-text-tertiary">
+                                              Sent: {new Date(log.sentAt).toLocaleString()}
+                                            </div>
+                                          </div>
+
+                                          {/* Email Body */}
+                                          <div className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap pr-10">
+                                            {body}
+                                          </div>
+
+                                          {/* Interaction Console or CTA click Simulation */}
+                                          <div className="border-t border-card-border pt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                            
+                                            {/* Simulate actions */}
+                                            <div className="flex items-center gap-2">
+                                              {log.status === 'sent' && (
+                                                <button
+                                                  onClick={() => api.triggerStatusCallback(log.campaignId, log.customerId, 'delivered')}
+                                                  className="bg-white/5 border border-card-border hover:bg-white/10 text-text-primary font-bold text-[9px] py-1.5 px-3 rounded cursor-pointer transition-all"
+                                                >
+                                                  Simulate Inbox Delivery
+                                                </button>
+                                              )}
+                                              {log.status === 'delivered' && (
+                                                <button
+                                                  onClick={() => api.triggerStatusCallback(log.campaignId, log.customerId, 'opened')}
+                                                  className="bg-emerald-500/15 border border-emerald-500/20 hover:bg-emerald-500/25 text-emerald-400 font-bold text-[9px] py-1.5 px-3 rounded cursor-pointer transition-all"
+                                                >
+                                                  Simulate Open Email
+                                                </button>
+                                              )}
+                                            </div>
+
+                                            {/* Clickable CTA Simulation */}
+                                            {log.status === 'opened' && (
+                                              <button
+                                                onClick={() => api.triggerStatusCallback(log.campaignId, log.customerId, 'clicked')}
+                                                className="bg-gradient-to-r from-accent-violet to-accent-indigo hover:opacity-95 text-white font-black text-[9px] py-2 px-4 rounded-lg shadow-md cursor-pointer transition-all uppercase tracking-wider"
+                                              >
+                                                👉 Click Campaign Link
+                                              </button>
+                                            )}
+
+                                            {log.status === 'clicked' && (
+                                              <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                                                <span>✓ Campaign offer link clicked & registered in CRM Core</span>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-text-tertiary">
+                        <Users className="w-10 h-10 mb-3 text-text-tertiary/50" />
+                        <span className="text-xs">Select a customer from the left list to view their simulator inbox.</span>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )}
 
             </div>
           )}

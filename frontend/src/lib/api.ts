@@ -1,4 +1,18 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `http://${hostname}:5000/api`;
+    }
+  }
+  return 'http://localhost:5000/api';
+};
+
+const BASE_URL = getBaseUrl();
+
 
 export interface Customer {
   _id: string;
@@ -412,6 +426,8 @@ const getMockStore = () => {
       createCampaign: async (data: any) => data,
       sendCampaign: async () => ({ message: 'Simulating...', audienceSize: 0 }),
       getCampaignDetails: async (id: string) => ({ campaign: {} as any, logs: [] }),
+      getCampaignLogs: async (customerId?: string) => [],
+      triggerStatusCallback: async () => {},
       getDashboardAnalytics: async () => ({} as any),
       analyzeGoal: async () => ({} as any)
     };
@@ -512,6 +528,14 @@ const getMockStore = () => {
       
       const campaignLogs = logs.filter(l => l.campaignId === id);
       return { campaign, logs: campaignLogs };
+    },
+
+    getCampaignLogs: async (customerId?: string) => {
+      const logs = getLogsList();
+      if (customerId) {
+        return logs.filter(l => l.customerId === customerId);
+      }
+      return logs;
     },
 
     sendCampaign: async (id: string) => {
@@ -754,6 +778,65 @@ export const api = {
       return await res.json();
     } catch (err) {
       return getMockStore().getCampaignDetails(id);
+    }
+  },
+
+  getCampaignLogs: async (customerId?: string): Promise<CampaignLog[]> => {
+    try {
+      const url = customerId ? `${BASE_URL}/logs?customerId=${customerId}` : `${BASE_URL}/logs`;
+      const res = await fetchWithFallback(url);
+      if (!res.ok) throw new Error('Failed to fetch campaign logs');
+      return await res.json();
+    } catch (err) {
+      return getMockStore().getCampaignLogs(customerId);
+    }
+  },
+
+  triggerStatusCallback: async (campaignId: string, customerId: string, status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked'): Promise<void> => {
+    try {
+      const res = await fetchWithFallback(`${BASE_URL}/campaigns/${campaignId}/callback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, status })
+      });
+      if (!res.ok) throw new Error('Failed to post callback');
+    } catch (err) {
+      // Standalone fallback: update localStorage directly
+      const getLogs = (): CampaignLog[] => {
+        const stored = localStorage.getItem('xeno_logs');
+        return stored ? JSON.parse(stored) : [];
+      };
+      const saveLogs = (list: CampaignLog[]) => localStorage.setItem('xeno_logs', JSON.stringify(list));
+      
+      const getCampaigns = (): Campaign[] => {
+        const stored = localStorage.getItem('xeno_campaigns');
+        return stored ? JSON.parse(stored) : [];
+      };
+      const saveCampaigns = (list: Campaign[]) => localStorage.setItem('xeno_campaigns', JSON.stringify(list));
+
+      const logsList = getLogs();
+      const log = logsList.find(l => l.campaignId === campaignId && l.customerId === customerId);
+      if (log && log.status !== status) {
+        log.status = status;
+        log.updatedAt = new Date().toISOString();
+        saveLogs(logsList);
+
+        // Update campaign counts
+        const campaigns = getCampaigns();
+        const camp = campaigns.find(c => c._id === campaignId);
+        if (camp) {
+          if (status === 'delivered') camp.deliveredCount = (camp.deliveredCount || 0) + 1;
+          if (status === 'failed') camp.failedCount = (camp.failedCount || 0) + 1;
+          if (status === 'opened') camp.openedCount = (camp.openedCount || 0) + 1;
+          if (status === 'clicked') camp.clickedCount = (camp.clickedCount || 0) + 1;
+          
+          const totalProcessed = (camp.deliveredCount || 0) + (camp.failedCount || 0);
+          if (totalProcessed >= camp.audienceSize) {
+            camp.status = 'Completed';
+          }
+          saveCampaigns(campaigns);
+        }
+      }
     }
   },
 

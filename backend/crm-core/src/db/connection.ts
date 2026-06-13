@@ -627,19 +627,28 @@ async function proactiveSeed() {
 
 export async function connectDB() {
   const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/xeno-crm';
-  console.log(`[DB] Attempting to connect to MongoDB at: ${mongoUri}...`);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const hasExplicitMongo = !!process.env.MONGO_URI;
+  
+  // Use a longer timeout in production or when an explicit URI is provided
+  const timeoutMs = (isProduction || hasExplicitMongo) ? 15000 : 2000;
+  
+  console.log(`[DB] Attempting to connect to MongoDB at: ${mongoUri.split('@').pop()} (timeout: ${timeoutMs}ms)...`);
 
   try {
-    // Attempt connection with a short timeout to prevent blocking startup
     await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 2000, // Wait 2s before timing out
+      serverSelectionTimeoutMS: timeoutMs,
     });
     isConnectedToMongo = true;
     console.log('💚 [DB] Successfully connected to MongoDB.');
   } catch (error: any) {
     isConnectedToMongo = false;
-    console.warn(`💛 [DB] MongoDB connection timed out or failed (${error.message}).`);
-    console.warn('⚡ [DB] GRACEFULLY FALLING BACK TO LOCAL FILE SYSTEM STORAGE (datastore.json)');
+    console.warn(`💛 [DB] MongoDB connection failed or timed out (${error.message}).`);
+    if (isProduction || hasExplicitMongo) {
+      console.error('🚨 [DB] CRITICAL: Running in production/configured database mode but failed to connect to remote MongoDB. Fallback JSONDB will be active but local changes will be ephemeral!');
+    } else {
+      console.warn('⚡ [DB] GRACEFULLY FALLING BACK TO LOCAL FILE SYSTEM STORAGE (datastore.json)');
+    }
   }
   
   // Proactively seed if empty
