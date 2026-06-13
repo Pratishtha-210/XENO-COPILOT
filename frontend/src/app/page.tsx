@@ -645,12 +645,25 @@ export default function Home() {
         setGlobalSuccess(`Campaign "${created.name}" launched successfully! Directing to monitoring hub...`);
         setTimeout(() => setGlobalSuccess(null), 4000);
 
-        // 3. Open campaign details
-        setSelectedCampaign(created);
-        setCampaignLogs([]);
+        // 3. Open campaign details - fetch fresh campaign with 'Running' status immediately
+        const list = await api.getCampaigns();
+        const freshCamp = list.find(c => c._id === created._id);
+        setSelectedCampaign(freshCamp || { ...created, status: 'Running' });
+
+        // Load initial logs immediately
+        try {
+          const details = await api.getCampaignDetails(created._id);
+          setCampaignLogs(details.logs);
+        } catch (e) {
+          setCampaignLogs([]);
+        }
+
         setActiveTab('campaigns');
         setAiResult(null);
         setAiPrompt('');
+
+        // Force immediate refresh of global analytics
+        await fetchAnalyticsAndCampaigns();
       }
     } catch (err: any) {
       setGlobalError('Failed to launch campaign: ' + err.message);

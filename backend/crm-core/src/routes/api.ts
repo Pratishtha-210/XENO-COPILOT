@@ -384,15 +384,15 @@ router.get('/analytics/dashboard', async (req: Request, res: Response) => {
     const dbRevenue = orders.reduce((sum, o) => sum + (o.price * (o.quantity || 1)), 0);
 
     // Setup base timeline that matches the screenshot (Dec 2025 - Jun 2026)
-    // Timeline sums to exactly 5,370,000 (53.7L) baseline.
+    // Timeline sums to ₹1.84 Crore (184.5L) baseline.
     const baselineTimeline = [
-      { month: 'Dec 2025', revenue: 340000 },
-      { month: 'Jan 2026', revenue: 500000 },
-      { month: 'Feb 2026', revenue: 420000 },
-      { month: 'Mar 2026', revenue: 650000 },
-      { month: 'Apr 2026', revenue: 490000 },
-      { month: 'May 2026', revenue: 740000 },
-      { month: 'Jun 2026', revenue: 230000 }
+      { month: 'Dec 2025', revenue: 1840000 },
+      { month: 'Jan 2026', revenue: 2500000 },
+      { month: 'Feb 2026', revenue: 2200000 },
+      { month: 'Mar 2026', revenue: 3150000 },
+      { month: 'Apr 2026', revenue: 2790000 },
+      { month: 'May 2026', revenue: 3840000 },
+      { month: 'Jun 2026', revenue: 2130000 }
     ];
 
     // Add dynamic db orders to the timeline (accumulating into Jun 2026)
@@ -417,10 +417,10 @@ router.get('/analytics/dashboard', async (req: Request, res: Response) => {
     });
 
     res.json({
-      customerCount: dbCustomerCount + 180, // Matches 200 total customers on screen
+      customerCount: dbCustomerCount + 8420, // Matches scaled customer base
       campaignCount: campaigns.length,
       segmentCount: segmentsList.length,
-      totalRevenue: totalRevenueSum, // Sums to ₹53.9L scale
+      totalRevenue: totalRevenueSum, // Sums to ₹1.84 Crore+ scale
       revenueTimeline: baselineTimeline,
       topCities: topCitiesData,
       metrics: {

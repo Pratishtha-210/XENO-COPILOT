@@ -193,6 +193,204 @@ const defaultCustomersMock: Customer[] = [
     lastOrderDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date().toISOString(),
     orders: [{ _id: "order_7", customerId: "mock_cust_7", itemBought: "Leather Boots", price: 8200, quantity: 1, orderDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_8",
+    name: "Aditya Verma",
+    email: "aditya.verma@example.com",
+    phone: "9555566666",
+    city: "Delhi",
+    totalSpend: 9500,
+    lastOrderDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_8", customerId: "mock_cust_8", itemBought: "Premium Sneakers", price: 9500, quantity: 1, orderDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_9",
+    name: "Meera Nair",
+    email: "meera.nair@example.com",
+    phone: "9444455555",
+    city: "Hyderabad",
+    totalSpend: 280,
+    lastOrderDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_9", customerId: "mock_cust_9", itemBought: "Filter Coffee", price: 280, quantity: 1, orderDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_10",
+    name: "Vikram Malhotra",
+    email: "vikram.m@example.com",
+    phone: "9333344444",
+    city: "Bangalore",
+    totalSpend: 210,
+    lastOrderDate: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_10", customerId: "mock_cust_10", itemBought: "Filter Coffee", price: 210, quantity: 1, orderDate: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_11",
+    name: "Sneha Reddy",
+    email: "sneha.r@example.com",
+    phone: "9222233333",
+    city: "Hyderabad",
+    totalSpend: 570,
+    lastOrderDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_11", customerId: "mock_cust_11", itemBought: "Cold Brew Coffee", price: 570, quantity: 1, orderDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_12",
+    name: "Rohan Gupta",
+    email: "rohan.g@example.com",
+    phone: "9111122222",
+    city: "Lucknow",
+    totalSpend: 11500,
+    lastOrderDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_12", customerId: "mock_cust_12", itemBought: "Premium Sneakers", price: 11500, quantity: 1, orderDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_13",
+    name: "Divya Nair",
+    email: "divya.n@example.com",
+    phone: "9000011111",
+    city: "Chandigarh",
+    totalSpend: 280,
+    lastOrderDate: new Date(Date.now() - 75 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_13", customerId: "mock_cust_13", itemBought: "Filter Coffee", price: 280, quantity: 1, orderDate: new Date(Date.now() - 75 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_14",
+    name: "Varun Das",
+    email: "varun.d@example.com",
+    phone: "8999988888",
+    city: "Bangalore",
+    totalSpend: 120,
+    lastOrderDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_14", customerId: "mock_cust_14", itemBought: "Filter Coffee", price: 120, quantity: 1, orderDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_15",
+    name: "Karthik Raja",
+    email: "karthik.raja@example.com",
+    phone: "8888877777",
+    city: "Hyderabad",
+    totalSpend: 250,
+    lastOrderDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_15", customerId: "mock_cust_15", itemBought: "Filter Coffee", price: 250, quantity: 1, orderDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_16",
+    name: "Harish Kalyan",
+    email: "harish.kalyan@example.com",
+    phone: "8777766666",
+    city: "Delhi",
+    totalSpend: 220,
+    lastOrderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_16", customerId: "mock_cust_16", itemBought: "Cold Brew Coffee", price: 220, quantity: 1, orderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_17",
+    name: "Harini Shah",
+    email: "harini.s@example.com",
+    phone: "8666655555",
+    city: "Lucknow",
+    totalSpend: 10800,
+    lastOrderDate: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_17", customerId: "mock_cust_17", itemBought: "Premium Sneakers", price: 10800, quantity: 1, orderDate: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_18",
+    name: "Amit Joshi",
+    email: "amit.j@example.com",
+    phone: "8555544444",
+    city: "Chandigarh",
+    totalSpend: 4800,
+    lastOrderDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_18", customerId: "mock_cust_18", itemBought: "Premium Sneakers", price: 4800, quantity: 1, orderDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_19",
+    name: "Shreya Sen",
+    email: "shreya.s@example.com",
+    phone: "8444433333",
+    city: "Bangalore",
+    totalSpend: 350,
+    lastOrderDate: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_19", customerId: "mock_cust_19", itemBought: "Filter Coffee", price: 350, quantity: 1, orderDate: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_20",
+    name: "Nitin Saxena",
+    email: "nitin.s@example.com",
+    phone: "8333322222",
+    city: "Delhi",
+    totalSpend: 7800,
+    lastOrderDate: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_20", customerId: "mock_cust_20", itemBought: "Premium Sneakers", price: 7800, quantity: 1, orderDate: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_21",
+    name: "Preeti Bose",
+    email: "preeti.b@example.com",
+    phone: "8222211111",
+    city: "Hyderabad",
+    totalSpend: 680,
+    lastOrderDate: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_21", customerId: "mock_cust_21", itemBought: "Cold Brew Coffee", price: 680, quantity: 1, orderDate: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_22",
+    name: "Arjun Pillai",
+    email: "arjun.p@example.com",
+    phone: "8111100000",
+    city: "Bangalore",
+    totalSpend: 7400,
+    lastOrderDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_22", customerId: "mock_cust_22", itemBought: "Premium Sneakers", price: 7400, quantity: 1, orderDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_23",
+    name: "Kiran More",
+    email: "kiran.m@example.com",
+    phone: "8000099999",
+    city: "Lucknow",
+    totalSpend: 1100,
+    lastOrderDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_23", customerId: "mock_cust_23", itemBought: "Tea Infuser", price: 1100, quantity: 1, orderDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_24",
+    name: "Sameer Deshmukh",
+    email: "sameer.d@example.com",
+    phone: "7999988888",
+    city: "Chandigarh",
+    totalSpend: 4200,
+    lastOrderDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_24", customerId: "mock_cust_24", itemBought: "Premium Sneakers", price: 4200, quantity: 1, orderDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString() }]
+  },
+  {
+    _id: "mock_cust_25",
+    name: "Ritu Phogat",
+    email: "ritu.p@example.com",
+    phone: "7888877777",
+    city: "Delhi",
+    totalSpend: 650,
+    lastOrderDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    orders: [{ _id: "order_25", customerId: "mock_cust_25", itemBought: "Filter Coffee", price: 650, quantity: 1, orderDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString() }]
   }
 ];
 
@@ -591,7 +789,8 @@ const getMockStore = () => {
       const campaigns = getCampaignsList();
       const segments = getSegmentsList();
       
-      const totalRev = customers.reduce((sum, c) => sum + c.totalSpend, 0);
+      const baselineRev = 18450000;
+      const totalRev = customers.reduce((sum, c) => sum + c.totalSpend, 0) + baselineRev;
       
       let totalSent = 0;
       let totalDelivered = 0;
@@ -615,26 +814,26 @@ const getMockStore = () => {
       const conversionRate = totalSent > 0 ? (totalConverted / totalSent) * 100 : 0;
 
       const timeline = [
-        { month: 'Jan', revenue: Math.round(totalRev * 0.1) },
-        { month: 'Feb', revenue: Math.round(totalRev * 0.15) },
-        { month: 'Mar', revenue: Math.round(totalRev * 0.12) },
-        { month: 'Apr', revenue: Math.round(totalRev * 0.2) },
-        { month: 'May', revenue: Math.round(totalRev * 0.18) },
-        { month: 'Jun', revenue: Math.round(totalRev * 0.25) }
+        { month: 'Jan 2026', revenue: Math.round(totalRev * 0.15) },
+        { month: 'Feb 2026', revenue: Math.round(totalRev * 0.13) },
+        { month: 'Mar 2026', revenue: Math.round(totalRev * 0.17) },
+        { month: 'Apr 2026', revenue: Math.round(totalRev * 0.16) },
+        { month: 'May 2026', revenue: Math.round(totalRev * 0.21) },
+        { month: 'Jun 2026', revenue: Math.round(totalRev * 0.18) }
       ];
 
       return {
-        customerCount: customers.length,
+        customerCount: customers.length + 8420,
         campaignCount: campaigns.length,
         segmentCount: segments.length,
         totalRevenue: totalRev,
         revenueTimeline: timeline,
         topCities: [
-          { city: 'Bangalore', count: customers.filter(c => c.city === 'Bangalore').length },
-          { city: 'Delhi', count: customers.filter(c => c.city === 'Delhi').length },
-          { city: 'Hyderabad', count: customers.filter(c => c.city === 'Hyderabad').length },
-          { city: 'Lucknow', count: customers.filter(c => c.city === 'Lucknow').length },
-          { city: 'Chandigarh', count: customers.filter(c => c.city === 'Chandigarh').length }
+          { city: 'Bangalore', count: customers.filter(c => c.city === 'Bangalore').length + 420 },
+          { city: 'Delhi', count: customers.filter(c => c.city === 'Delhi').length + 380 },
+          { city: 'Hyderabad', count: customers.filter(c => c.city === 'Hyderabad').length + 310 },
+          { city: 'Lucknow', count: customers.filter(c => c.city === 'Lucknow').length + 240 },
+          { city: 'Chandigarh', count: customers.filter(c => c.city === 'Chandigarh').length + 190 }
         ],
         metrics: {
           sent: totalSent,
