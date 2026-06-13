@@ -54,6 +54,7 @@ export interface ICampaign {
   openedCount: number;
   clickedCount: number;
   failedCount: number;
+  convertedCount: number; // Attribution Conversion Count
   createdAt: string;
 }
 
@@ -67,7 +68,7 @@ export interface ICampaignLog {
     phone: string;
   };
   customMessage: string;
-  status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked';
+  status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked' | 'converted';
   sentAt: string;
   updatedAt: string;
 }
@@ -112,6 +113,7 @@ const MongooseCampaignSchema = new mongoose.Schema<ICampaign>({
   openedCount: { type: Number, default: 0 },
   clickedCount: { type: Number, default: 0 },
   failedCount: { type: Number, default: 0 },
+  convertedCount: { type: Number, default: 0 },
   createdAt: { type: String, default: () => new Date().toISOString() }
 });
 
@@ -124,7 +126,7 @@ const MongooseCampaignLogSchema = new mongoose.Schema<ICampaignLog>({
     phone: String
   },
   customMessage: { type: String, required: true },
-  status: { type: String, enum: ['sent', 'delivered', 'failed', 'opened', 'clicked'], default: 'sent' },
+  status: { type: String, enum: ['sent', 'delivered', 'failed', 'opened', 'clicked', 'converted'], default: 'sent' },
   sentAt: { type: String, default: () => new Date().toISOString() },
   updatedAt: { type: String, default: () => new Date().toISOString() }
 });
@@ -316,6 +318,7 @@ class JSONStore {
           openedCount: 0,
           clickedCount: 0,
           failedCount: 0,
+          convertedCount: 0,
           createdAt: new Date().toISOString(),
         };
         this.data.campaigns.push(newDoc);
@@ -329,7 +332,7 @@ class JSONStore {
         this.save();
         return camp;
       },
-      incrementMetric: async (id: string, metric: 'sentCount' | 'deliveredCount' | 'openedCount' | 'clickedCount' | 'failedCount') => {
+      incrementMetric: async (id: string, metric: 'sentCount' | 'deliveredCount' | 'openedCount' | 'clickedCount' | 'failedCount' | 'convertedCount') => {
         const camp = this.data.campaigns.find(c => c._id === id);
         if (camp) {
           camp[metric] = (camp[metric] || 0) + 1;
@@ -365,7 +368,7 @@ class JSONStore {
         this.save();
         return newDoc;
       },
-      updateStatus: async (campaignId: string, customerId: string, status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked'): Promise<ICampaignLog | null> => {
+      updateStatus: async (campaignId: string, customerId: string, status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked' | 'converted'): Promise<ICampaignLog | null> => {
         const log = this.data.campaignLogs.find(l => l.campaignId === campaignId && l.customerId === customerId);
         if (!log) return null;
         log.status = status;
@@ -501,7 +504,7 @@ export const db = {
       }
       return await localStore.campaigns.update(id, updates);
     },
-    incrementMetric: async (id: string, metric: 'sentCount' | 'deliveredCount' | 'openedCount' | 'clickedCount' | 'failedCount'): Promise<void> => {
+    incrementMetric: async (id: string, metric: 'sentCount' | 'deliveredCount' | 'openedCount' | 'clickedCount' | 'failedCount' | 'convertedCount'): Promise<void> => {
       if (isConnectedToMongo) {
         await CampaignModel.findByIdAndUpdate(id, { $inc: { [metric]: 1 } });
       } else {
@@ -525,7 +528,7 @@ export const db = {
       }
       return await localStore.campaignLogs.create(doc);
     },
-    updateStatus: async (campaignId: string, customerId: string, status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked'): Promise<ICampaignLog | null> => {
+    updateStatus: async (campaignId: string, customerId: string, status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked' | 'converted'): Promise<ICampaignLog | null> => {
       if (isConnectedToMongo) {
         return await CampaignLogModel.findOneAndUpdate(
           { campaignId, customerId },

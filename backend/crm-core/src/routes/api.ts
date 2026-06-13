@@ -405,6 +405,7 @@ router.get('/analytics/dashboard', async (req: Request, res: Response) => {
     let totalOpened = 0;
     let totalClicked = 0;
     let totalFailed = 0;
+    let totalConverted = 0;
 
     campaigns.forEach(c => {
       totalSent += c.sentCount || 0;
@@ -412,6 +413,7 @@ router.get('/analytics/dashboard', async (req: Request, res: Response) => {
       totalOpened += c.openedCount || 0;
       totalClicked += c.clickedCount || 0;
       totalFailed += c.failedCount || 0;
+      totalConverted += c.convertedCount || 0;
     });
 
     res.json({
@@ -427,10 +429,96 @@ router.get('/analytics/dashboard', async (req: Request, res: Response) => {
         opened: totalOpened,
         clicked: totalClicked,
         failed: totalFailed,
+        converted: totalConverted,
         openRate: totalDelivered > 0 ? Math.round((totalOpened / totalDelivered) * 100) : 0,
         clickRate: totalOpened > 0 ? Math.round((totalClicked / totalOpened) * 100) : 0,
         deliveryRate: totalSent > 0 ? Math.round((totalDelivered / totalSent) * 100) : 0,
+        conversionRate: totalSent > 0 ? Math.round((totalConverted / totalSent) * 100) : 0
       }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 10. Data Ingestion: Create Customer
+router.post('/customers', async (req: Request, res: Response) => {
+  const { name, email, phone, city } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required' });
+  }
+
+  try {
+    const customer = await db.customers.create({
+      name,
+      email,
+      phone: phone || '',
+      city: city || 'Delhi',
+      totalSpend: 0,
+      lastOrderDate: null
+    });
+    res.status(201).json(customer);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 11. Data Ingestion: Create Order & Campaign Attribution
+router.post('/orders', async (req: Request, res: Response) => {
+  const { customerId, itemBought, price, quantity, campaignId } = req.body;
+  if (!customerId || !itemBought || !price) {
+    return res.status(400).json({ error: 'customerId, itemBought, and price are required' });
+  }
+
+  try {
+    const customer = await db.customers.findById(customerId);
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    const qty = quantity ? parseInt(quantity) : 1;
+    const itemPrice = parseFloat(price);
+
+    // Create the order (triggers automatic update of customer spend)
+    const order = await db.orders.create({
+      customerId,
+      itemBought,
+      price: itemPrice,
+      quantity: qty,
+      orderDate: new Date().toISOString()
+    });
+
+    let attributedCampaignId = campaignId;
+
+    // Fallback: Last-click attribution logic within last 24 hours
+    if (!attributedCampaignId) {
+      const logs = await db.campaignLogs.find({ customerId });
+      const activeClickedLogs = logs
+        .filter(l => l.status === 'clicked' || l.status === 'opened')
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+      if (activeClickedLogs.length > 0) {
+        // Double-check recency (e.g. 24 hour threshold)
+        const recencyMs = Date.now() - new Date(activeClickedLogs[0].updatedAt).getTime();
+        if (recencyMs < 24 * 60 * 60 * 1000) {
+          attributedCampaignId = activeClickedLogs[0].campaignId;
+        }
+      }
+    }
+
+    // Process Campaign Attribution
+    if (attributedCampaignId) {
+      const logs = await db.campaignLogs.find({ campaignId: attributedCampaignId, customerId });
+      const log = logs.length > 0 ? logs[0] : null;
+      if (log && log.status !== 'converted') {
+        await db.campaignLogs.updateStatus(attributedCampaignId, customerId, 'converted');
+        await db.campaigns.incrementMetric(attributedCampaignId, 'convertedCount');
+      }
+    }
+
+    res.status(201).json({
+      order,
+      attributedCampaignId: attributedCampaignId || null
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

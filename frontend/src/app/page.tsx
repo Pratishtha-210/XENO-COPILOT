@@ -25,7 +25,8 @@ import {
   Plus,
   Trash2,
   FileText,
-  MoreVertical
+  MoreVertical,
+  ShoppingBag
 } from 'lucide-react';
 import { api, Customer, Campaign, CampaignLog, DashboardAnalytics, Segment } from '../lib/api';
 
@@ -533,6 +534,43 @@ export default function Home() {
     }
   };
 
+  const handleSimulatePurchase = async (campaignId: string, customerId: string, customMessage: string) => {
+    try {
+      // Parse a potential product or guess from the message body
+      let productBought = 'Premium Item';
+      if (customMessage.toLowerCase().includes('coffee')) {
+        productBought = 'Filter Coffee';
+      } else if (customMessage.toLowerCase().includes('sneakers')) {
+        productBought = 'Premium Sneakers';
+      } else if (customMessage.toLowerCase().includes('shoes')) {
+        productBought = 'Running Shoes';
+      } else if (customMessage.toLowerCase().includes('latte')) {
+        productBought = 'Iced Latte';
+      }
+
+      // Generate a realistic price
+      let price = 500;
+      if (productBought === 'Premium Sneakers') price = 5400;
+      if (productBought === 'Running Shoes') price = 7500;
+
+      await api.createOrder({
+        customerId,
+        itemBought: productBought,
+        price,
+        quantity: 1,
+        campaignId
+      });
+
+      setGlobalSuccess('Simulated purchase recorded! Campaign conversion registered.');
+      setTimeout(() => setGlobalSuccess(null), 4000);
+      
+      // Force refresh data
+      await fetchInitialData();
+    } catch (err: any) {
+      setGlobalError('Failed to simulate purchase: ' + err.message);
+    }
+  };
+
   const handleAnalyzeGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiPrompt.trim()) return;
@@ -864,8 +902,8 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* 4 Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* 5 Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
                 {/* Total Customers */}
                 <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-top">
                   <div className="space-y-2">
@@ -928,6 +966,24 @@ export default function Home() {
                   <div className="flex flex-col items-end justify-end h-full min-h-[60px]">
                     <div className="bg-pink-500/10 text-pink-400 p-2.5 rounded-xl border border-pink-500/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                       <Target className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Campaign Conversions */}
+                <div className="glass-panel p-5 relative overflow-hidden flex items-center justify-between group hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl hover:shadow-accent-violet/5 hover:border-accent-violet/20 transition-all duration-300 animate-slide-in-top delay-250">
+                  <div className="space-y-2">
+                    <span className="text-[10px] text-text-tertiary uppercase font-bold block">Attributed Sales</span>
+                    <span className="text-2xl font-black text-text-primary block">
+                      {dashboardStats?.metrics?.converted ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end justify-between h-full min-h-[60px]">
+                    <span className="text-[10px] text-emerald-400 font-black flex items-center gap-0.5 animate-pulse bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                      {dashboardStats?.metrics?.conversionRate ?? 0}% Rate
+                    </span>
+                    <div className="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl border border-emerald-500/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                      <ShoppingBag className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
@@ -1108,7 +1164,7 @@ export default function Home() {
                     {/* Left Column: Live Analytics & Recipient Logs */}
                     <div className="lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-1">
                       {/* Live Counter Cards */}
-                      <div className="grid grid-cols-4 gap-4">
+                      <div className="grid grid-cols-5 gap-4">
                         <div className="bg-panel-bg border border-card-border p-3.5 rounded-lg text-center">
                           <span className="text-[9px] text-text-tertiary font-bold uppercase block">Sent</span>
                           <span className="text-lg font-bold mt-0.5 block text-text-primary">{selectedCampaign.sentCount}</span>
@@ -1124,6 +1180,10 @@ export default function Home() {
                         <div className="bg-panel-bg border border-card-border p-3.5 rounded-lg text-center">
                           <span className="text-[9px] text-text-tertiary font-bold uppercase block">Clicked</span>
                           <span className="text-lg font-bold mt-0.5 block text-accent-indigo">{selectedCampaign.clickedCount}</span>
+                        </div>
+                        <div className="bg-panel-bg border border-card-border p-3.5 rounded-lg text-center">
+                          <span className="text-[9px] text-text-tertiary font-bold uppercase block">Converted</span>
+                          <span className="text-lg font-bold mt-0.5 block text-pink-400">{selectedCampaign.convertedCount ?? 0}</span>
                         </div>
                       </div>
 
@@ -1172,6 +1232,7 @@ export default function Home() {
                                     </td>
                                     <td className="p-3">
                                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                        log.status === 'converted' ? 'bg-pink-950/20 text-pink-400 border border-pink-500/10' :
                                         log.status === 'clicked' ? 'bg-indigo-950/20 text-indigo-400 border border-indigo-500/10' :
                                         log.status === 'opened' ? 'bg-violet-950/20 text-violet-400 border border-violet-500/10' :
                                         log.status === 'delivered' ? 'bg-emerald-950/20 text-emerald-400 border border-emerald-500/10' :
@@ -1547,6 +1608,15 @@ export default function Home() {
                                 <span className="text-text-tertiary text-[9px] uppercase font-bold block">CTR</span>
                                 <span className="font-bold text-accent-indigo mt-0.5 block">
                                   {camp.openedCount > 0 ? Math.round((camp.clickedCount / camp.openedCount) * 100) : 0}%
+                                </span>
+                              </div>
+                              <div className="text-xs hidden md:block w-20">
+                                <span className="text-text-tertiary text-[9px] uppercase font-bold block">Conversions</span>
+                                <span className="font-bold text-pink-400 mt-0.5 block">
+                                  {camp.convertedCount ?? 0}
+                                  <span className="text-[9px] text-text-tertiary font-normal ml-0.5">
+                                    ({camp.audienceSize > 0 ? Math.round(((camp.convertedCount ?? 0) / camp.audienceSize) * 100) : 0}%)
+                                  </span>
                                 </span>
                               </div>
                               <ChevronRight className="w-3.5 h-3.5 text-text-tertiary group-hover:text-text-secondary transition-colors" />
@@ -2157,6 +2227,7 @@ export default function Home() {
                                             log.status === 'delivered' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                                             log.status === 'opened' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                             log.status === 'clicked' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
+                                            log.status === 'converted' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' :
                                             'bg-red-500/10 text-red-400 border-red-500/20'
                                           }`}>
                                             {log.status}
@@ -2190,8 +2261,16 @@ export default function Home() {
                                             </button>
                                           )}
                                           {log.status === 'clicked' && (
-                                            <div className="text-[9px] text-text-tertiary text-center italic mt-1 bg-white/5 py-1 rounded">
-                                              Lifecycle Complete
+                                            <button
+                                              onClick={() => handleSimulatePurchase(log.campaignId, log.customerId, log.customMessage)}
+                                              className="w-full bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 text-pink-400 text-[9px] font-bold py-1 px-2 rounded cursor-pointer transition-all text-center animate-pulse"
+                                            >
+                                              🛍️ Buy Product (Convert)
+                                            </button>
+                                          )}
+                                          {log.status === 'converted' && (
+                                            <div className="text-[9px] text-emerald-400 font-bold text-center italic mt-1 bg-emerald-500/5 py-1 rounded border border-emerald-500/10">
+                                              🛍️ Conversion Attributed!
                                             </div>
                                           )}
                                           {log.status === 'failed' && (
@@ -2308,8 +2387,22 @@ export default function Home() {
                                             )}
 
                                             {log.status === 'clicked' && (
-                                              <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
-                                                <span>✓ Campaign offer link clicked & registered in CRM Core</span>
+                                              <div className="flex flex-col sm:flex-row sm:items-center gap-3.5 w-full">
+                                                <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                                                  <span>✓ Campaign offer link clicked & registered in CRM Core</span>
+                                                </div>
+                                                <button
+                                                  onClick={() => handleSimulatePurchase(log.campaignId, log.customerId, log.customMessage)}
+                                                  className="bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/25 text-pink-400 font-black text-[9px] py-1.5 px-3.5 rounded-lg cursor-pointer transition-all uppercase tracking-wider animate-pulse ml-auto"
+                                                >
+                                                  🛍️ Buy Product (Convert)
+                                                </button>
+                                              </div>
+                                            )}
+
+                                            {log.status === 'converted' && (
+                                              <div className="text-[10px] text-pink-400 font-bold flex items-center gap-1.5 bg-pink-500/5 px-4 py-2 rounded-lg border border-pink-500/10 w-full justify-center">
+                                                <span>🛍️ Order Placed & Attributed to Campaign successfully!</span>
                                               </div>
                                             )}
                                           </div>

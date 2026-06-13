@@ -58,6 +58,7 @@ export interface Campaign {
   openedCount: number;
   clickedCount: number;
   failedCount: number;
+  convertedCount: number;
   createdAt: string;
 }
 
@@ -71,7 +72,7 @@ export interface CampaignLog {
     phone: string;
   };
   customMessage: string;
-  status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked';
+  status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked' | 'converted';
   sentAt: string;
   updatedAt: string;
 }
@@ -89,9 +90,11 @@ export interface DashboardAnalytics {
     opened: number;
     clicked: number;
     failed: number;
+    converted: number;
     openRate: number;
     clickRate: number;
     deliveryRate: number;
+    conversionRate: number;
   };
 }
 
@@ -227,6 +230,7 @@ const defaultCampaignsMock: Campaign[] = [
     openedCount: 1,
     clickedCount: 1,
     failedCount: 0,
+    convertedCount: 1,
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
   }
 ];
@@ -418,6 +422,12 @@ const runMockSimulation = (campaignId: string, matchedCustomers: Customer[], tem
 const getMockStore = () => {
   if (typeof window === 'undefined') {
     return {
+      getCustomersList: () => [] as Customer[],
+      getSegmentsList: () => [] as Segment[],
+      getCampaignsList: () => [] as Campaign[],
+      getLogsList: () => [] as CampaignLog[],
+      saveCustomers: (list: Customer[]) => {},
+      saveCampaigns: (list: Campaign[]) => {},
       getCustomers: async () => ({ databaseMode: 'Vercel Sandbox', count: 0, customers: [] }),
       seedCustomers: async () => ({ message: 'Mock reset complete' }),
       getSegments: async () => [],
@@ -450,6 +460,12 @@ const getMockStore = () => {
   const saveCampaigns = (list: Campaign[]) => localStorage.setItem('xeno_campaigns', JSON.stringify(list));
 
   return {
+    getCustomersList,
+    getSegmentsList,
+    getCampaignsList,
+    getLogsList,
+    saveCustomers,
+    saveCampaigns,
     getCustomers: async () => {
       const list = getCustomersList();
       return { databaseMode: 'Vercel Sandbox', count: list.length, customers: list };
@@ -511,6 +527,7 @@ const getMockStore = () => {
         openedCount: 0,
         clickedCount: 0,
         failedCount: 0,
+        convertedCount: 0,
         createdAt: new Date().toISOString()
       };
       
@@ -561,6 +578,7 @@ const getMockStore = () => {
       campaign.openedCount = 0;
       campaign.clickedCount = 0;
       campaign.failedCount = 0;
+      campaign.convertedCount = 0;
       saveCampaigns(campaigns);
 
       runMockSimulation(id, matched, campaign.messageTemplate);
@@ -580,6 +598,7 @@ const getMockStore = () => {
       let totalOpened = 0;
       let totalClicked = 0;
       let totalFailed = 0;
+      let totalConverted = 0;
       
       campaigns.forEach(c => {
         totalSent += c.sentCount || 0;
@@ -587,11 +606,13 @@ const getMockStore = () => {
         totalOpened += c.openedCount || 0;
         totalClicked += c.clickedCount || 0;
         totalFailed += c.failedCount || 0;
+        totalConverted += c.convertedCount || 0;
       });
 
       const openRate = totalDelivered > 0 ? (totalOpened / totalDelivered) * 100 : 0;
       const clickRate = totalOpened > 0 ? (totalClicked / totalOpened) * 100 : 0;
       const deliveryRate = totalSent > 0 ? (totalDelivered / totalSent) * 100 : 0;
+      const conversionRate = totalSent > 0 ? (totalConverted / totalSent) * 100 : 0;
 
       const timeline = [
         { month: 'Jan', revenue: Math.round(totalRev * 0.1) },
@@ -621,9 +642,11 @@ const getMockStore = () => {
           opened: totalOpened,
           clicked: totalClicked,
           failed: totalFailed,
+          converted: totalConverted,
           openRate: Math.round(openRate),
           clickRate: Math.round(clickRate),
-          deliveryRate: Math.round(deliveryRate)
+          deliveryRate: Math.round(deliveryRate),
+          conversionRate: Math.round(conversionRate)
         }
       };
     },
@@ -792,7 +815,7 @@ export const api = {
     }
   },
 
-  triggerStatusCallback: async (campaignId: string, customerId: string, status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked'): Promise<void> => {
+  triggerStatusCallback: async (campaignId: string, customerId: string, status: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked' | 'converted'): Promise<void> => {
     try {
       const res = await fetchWithFallback(`${BASE_URL}/campaigns/${campaignId}/callback`, {
         method: 'POST',
@@ -829,6 +852,7 @@ export const api = {
           if (status === 'failed') camp.failedCount = (camp.failedCount || 0) + 1;
           if (status === 'opened') camp.openedCount = (camp.openedCount || 0) + 1;
           if (status === 'clicked') camp.clickedCount = (camp.clickedCount || 0) + 1;
+          if (status === 'converted') camp.convertedCount = (camp.convertedCount || 0) + 1;
           
           const totalProcessed = (camp.deliveredCount || 0) + (camp.failedCount || 0);
           if (totalProcessed >= camp.audienceSize) {
@@ -837,6 +861,106 @@ export const api = {
           saveCampaigns(campaigns);
         }
       }
+    }
+  },
+
+  createCustomer: async (customerData: Partial<Customer>): Promise<Customer> => {
+    try {
+      const res = await fetchWithFallback(`${BASE_URL}/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customerData),
+      });
+      if (!res.ok) throw new Error('Failed to create customer');
+      return await res.json();
+    } catch (err) {
+      // Standalone fallback
+      const list = getMockStore().getCustomersList();
+      const newCust: Customer = {
+        _id: `mock_cust_${Date.now()}`,
+        name: customerData.name || 'Unnamed Customer',
+        email: customerData.email || '',
+        phone: customerData.phone || '',
+        city: customerData.city || 'Delhi',
+        totalSpend: 0,
+        lastOrderDate: null,
+        createdAt: new Date().toISOString()
+      };
+      list.push(newCust);
+      localStorage.setItem('xeno_customers', JSON.stringify(list));
+      return newCust;
+    }
+  },
+
+  createOrder: async (orderData: { customerId: string; itemBought: string; price: number; quantity?: number; campaignId?: string }): Promise<any> => {
+    try {
+      const res = await fetchWithFallback(`${BASE_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+      if (!res.ok) throw new Error('Failed to create order');
+      return await res.json();
+    } catch (err) {
+      // Standalone fallback: update localStorage customer spend and campaign attribution
+      const getLogs = (): CampaignLog[] => {
+        const stored = localStorage.getItem('xeno_logs');
+        return stored ? JSON.parse(stored) : [];
+      };
+      const saveLogs = (list: CampaignLog[]) => localStorage.setItem('xeno_logs', JSON.stringify(list));
+      
+      const getCampaigns = (): Campaign[] => {
+        const stored = localStorage.getItem('xeno_campaigns');
+        return stored ? JSON.parse(stored) : [];
+      };
+      const saveCampaigns = (list: Campaign[]) => localStorage.setItem('xeno_campaigns', JSON.stringify(list));
+
+      const getCustomers = (): Customer[] => {
+        const stored = localStorage.getItem('xeno_customers');
+        return stored ? JSON.parse(stored) : [];
+      };
+      const saveCustomers = (list: Customer[]) => localStorage.setItem('xeno_customers', JSON.stringify(list));
+
+      const customers = getCustomers();
+      const customer = customers.find(c => c._id === orderData.customerId);
+      const spend = orderData.price * (orderData.quantity || 1);
+      
+      if (customer) {
+        customer.totalSpend = (customer.totalSpend || 0) + spend;
+        customer.lastOrderDate = new Date().toISOString();
+        saveCustomers(customers);
+      }
+
+      let campaignId = orderData.campaignId;
+      if (!campaignId) {
+        // Find most recent clicked/opened campaign log
+        const logs = getLogs();
+        const activeClickedLogs = logs
+          .filter(l => l.customerId === orderData.customerId && (l.status === 'clicked' || l.status === 'opened'))
+          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        if (activeClickedLogs.length > 0) {
+          campaignId = activeClickedLogs[0].campaignId;
+        }
+      }
+
+      if (campaignId) {
+        const logsList = getLogs();
+        const log = logsList.find(l => l.campaignId === campaignId && l.customerId === orderData.customerId);
+        if (log && log.status !== 'converted') {
+          log.status = 'converted';
+          log.updatedAt = new Date().toISOString();
+          saveLogs(logsList);
+
+          const campaignsList = getCampaigns();
+          const camp = campaignsList.find(c => c._id === campaignId);
+          if (camp) {
+            camp.convertedCount = (camp.convertedCount || 0) + 1;
+            saveCampaigns(campaignsList);
+          }
+        }
+      }
+
+      return { success: true, attributedCampaignId: campaignId || null };
     }
   },
 
