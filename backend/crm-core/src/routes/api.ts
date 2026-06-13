@@ -347,58 +347,48 @@ router.get('/logs', async (req: Request, res: Response) => {
   }
 });
 
-// 9. Dashboard Global Analytics Summary (Screenshot aligned)
+// 9. Dashboard Global Analytics Summary (Database-driven)
 router.get('/analytics/dashboard', async (req: Request, res: Response) => {
   try {
     const campaigns = await db.campaigns.find();
     const customers = await db.customers.find();
     const segmentsList = await db.segments.find();
+    const orders = await db.orders.find();
 
-    // Sum up dynamic active counts
     const dbCustomerCount = customers.length;
-    // Map customer cities count
-    const cityCounts: Record<string, number> = {
-      'Bangalore': 19,
-      'Hyderabad': 13,
-      'Lucknow': 12,
-      'Chandigarh': 12,
-      'Delhi': 12
-    };
-
-    // Add real database distributions
+    
+    // Group top cities dynamically
+    const cityCounts: Record<string, number> = {};
     for (const customer of customers) {
       const city = customer.city || 'Delhi';
-      if (cityCounts[city] !== undefined) {
-        cityCounts[city]++;
-      } else {
-        cityCounts[city] = 1;
-      }
+      cityCounts[city] = (cityCounts[city] || 0) + 1;
     }
 
     const topCitiesData = Object.keys(cityCounts)
       .map(city => ({ city, count: cityCounts[city] }))
       .sort((a, b) => b.count - a.count);
 
-    // Dynamic database revenue additions
-    const orders = await db.orders.find();
+    // Dynamic database revenue calculations
     const dbRevenue = orders.reduce((sum, o) => sum + (o.price * (o.quantity || 1)), 0);
 
-    // Setup base timeline that matches the screenshot (Dec 2025 - Jun 2026)
-    // Timeline sums to ₹1.84 Crore (184.5L) baseline.
-    const baselineTimeline = [
-      { month: 'Dec 2025', revenue: 1840000 },
-      { month: 'Jan 2026', revenue: 2500000 },
-      { month: 'Feb 2026', revenue: 2200000 },
-      { month: 'Mar 2026', revenue: 3150000 },
-      { month: 'Apr 2026', revenue: 2790000 },
-      { month: 'May 2026', revenue: 3840000 },
-      { month: 'Jun 2026', revenue: 2130000 }
-    ];
-
-    // Add dynamic db orders to the timeline (accumulating into Jun 2026)
-    baselineTimeline[6].revenue += dbRevenue;
-
-    const totalRevenueSum = baselineTimeline.reduce((sum, item) => sum + item.revenue, 0);
+    // Build timeline dynamically from database order dates
+    const sortedOrders = [...orders].sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime());
+    const timelineMap: Record<string, number> = {};
+    for (const order of sortedOrders) {
+      const date = new Date(order.orderDate);
+      const monthStr = date.toLocaleString('en-US', { month: 'short', year: 'numeric' }); // e.g. "Jun 2026"
+      timelineMap[monthStr] = (timelineMap[monthStr] || 0) + (order.price * (order.quantity || 1));
+    }
+    
+    let revenueTimeline = Object.keys(timelineMap).map(month => ({
+      month,
+      revenue: timelineMap[month]
+    }));
+    
+    if (revenueTimeline.length === 0) {
+      const currentMonth = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      revenueTimeline = [{ month: currentMonth, revenue: 0 }];
+    }
 
     let totalSent = 0;
     let totalDelivered = 0;
@@ -417,11 +407,11 @@ router.get('/analytics/dashboard', async (req: Request, res: Response) => {
     });
 
     res.json({
-      customerCount: dbCustomerCount + 8420, // Matches scaled customer base
+      customerCount: dbCustomerCount, // Pure database count
       campaignCount: campaigns.length,
       segmentCount: segmentsList.length,
-      totalRevenue: totalRevenueSum, // Sums to ₹1.84 Crore+ scale
-      revenueTimeline: baselineTimeline,
+      totalRevenue: dbRevenue, // Pure database sum
+      revenueTimeline: revenueTimeline,
       topCities: topCitiesData,
       metrics: {
         sent: totalSent,

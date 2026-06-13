@@ -789,8 +789,7 @@ const getMockStore = () => {
       const campaigns = getCampaignsList();
       const segments = getSegmentsList();
       
-      const baselineRev = 18450000;
-      const totalRev = customers.reduce((sum, c) => sum + c.totalSpend, 0) + baselineRev;
+      const totalRev = customers.reduce((sum, c) => sum + c.totalSpend, 0);
       
       let totalSent = 0;
       let totalDelivered = 0;
@@ -813,28 +812,52 @@ const getMockStore = () => {
       const deliveryRate = totalSent > 0 ? (totalDelivered / totalSent) * 100 : 0;
       const conversionRate = totalSent > 0 ? (totalConverted / totalSent) * 100 : 0;
 
-      const timeline = [
-        { month: 'Jan 2026', revenue: Math.round(totalRev * 0.15) },
-        { month: 'Feb 2026', revenue: Math.round(totalRev * 0.13) },
-        { month: 'Mar 2026', revenue: Math.round(totalRev * 0.17) },
-        { month: 'Apr 2026', revenue: Math.round(totalRev * 0.16) },
-        { month: 'May 2026', revenue: Math.round(totalRev * 0.21) },
-        { month: 'Jun 2026', revenue: Math.round(totalRev * 0.18) }
-      ];
+      // Extract and group all customer orders to build a dynamic timeline
+      const allOrders: any[] = [];
+      customers.forEach(c => {
+        if (c.orders) {
+          c.orders.forEach(o => {
+            allOrders.push(o);
+          });
+        }
+      });
+      // Sort orders chronologically
+      allOrders.sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime());
+      
+      const timelineMap: Record<string, number> = {};
+      allOrders.forEach(o => {
+        const date = new Date(o.orderDate);
+        const monthStr = date.toLocaleString('en-US', { month: 'short', year: 'numeric' }); // e.g., "Jun 2026"
+        timelineMap[monthStr] = (timelineMap[monthStr] || 0) + o.price;
+      });
+      
+      let timeline = Object.keys(timelineMap).map(month => ({
+        month,
+        revenue: timelineMap[month]
+      }));
+      
+      if (timeline.length === 0) {
+        const currentMonth = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
+        timeline = [{ month: currentMonth, revenue: 0 }];
+      }
+
+      // Group top cities dynamically
+      const cityCounts: Record<string, number> = {};
+      customers.forEach(c => {
+        const city = c.city || 'Delhi';
+        cityCounts[city] = (cityCounts[city] || 0) + 1;
+      });
+      const topCities = Object.keys(cityCounts)
+        .map(city => ({ city, count: cityCounts[city] }))
+        .sort((a, b) => b.count - a.count);
 
       return {
-        customerCount: customers.length + 8420,
+        customerCount: customers.length,
         campaignCount: campaigns.length,
         segmentCount: segments.length,
         totalRevenue: totalRev,
         revenueTimeline: timeline,
-        topCities: [
-          { city: 'Bangalore', count: customers.filter(c => c.city === 'Bangalore').length + 420 },
-          { city: 'Delhi', count: customers.filter(c => c.city === 'Delhi').length + 380 },
-          { city: 'Hyderabad', count: customers.filter(c => c.city === 'Hyderabad').length + 310 },
-          { city: 'Lucknow', count: customers.filter(c => c.city === 'Lucknow').length + 240 },
-          { city: 'Chandigarh', count: customers.filter(c => c.city === 'Chandigarh').length + 190 }
-        ],
+        topCities: topCities,
         metrics: {
           sent: totalSent,
           delivered: totalDelivered,
