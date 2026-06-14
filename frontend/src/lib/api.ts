@@ -422,6 +422,49 @@ const defaultSegmentsMock: Segment[] = [
   }
 ];
 
+const defaultLogsMock: CampaignLog[] = [
+  {
+    _id: "mock_log_sneaker_1",
+    campaignId: "mock_camp_1",
+    customerId: "mock_cust_2", // Aarav Mehta
+    recipientDetails: { name: "Aarav Mehta", email: "aarav.mehta@example.com", phone: "9812345678" },
+    customMessage: "Hey Aarav Mehta, get early access to our new Premium Sneakers collection! You spent a total of ₹5400 with us, so you are in our VIP tier.",
+    status: "converted",
+    sentAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "mock_log_sneaker_2",
+    campaignId: "mock_camp_1",
+    customerId: "mock_cust_5", // Sanya Kapoor
+    recipientDetails: { name: "Sanya Kapoor", email: "sanya@example.com", phone: "9898989898" },
+    customMessage: "Hey Sanya Kapoor, get early access to our new Premium Sneakers collection! You spent a total of ₹6200 with us, so you are in our VIP tier.",
+    status: "delivered",
+    sentAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "mock_log_coffee_1",
+    campaignId: "mock_camp_2",
+    customerId: "mock_cust_1", // Pratishtha Sharma
+    recipientDetails: { name: "Pratishtha Sharma", email: "pratishtha@example.com", phone: "9876543210" },
+    customMessage: "Hi Pratishtha Sharma! We noticed you loved Filter Coffee and have spent a total of ₹750 with us. Get 15% off your next purchase using code WINBACK15.",
+    status: "clicked", // Ready to convert!
+    sentAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1.8 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "mock_log_coffee_2",
+    campaignId: "mock_camp_2",
+    customerId: "mock_cust_3", // Ananya Iyer
+    recipientDetails: { name: "Ananya Iyer", email: "ananya.iyer@example.com", phone: "9988776655" },
+    customMessage: "Hi Ananya Iyer! We noticed you loved Filter Coffee and have spent a total of ₹320 with us. Get 15% off your next purchase using code WINBACK15.",
+    status: "opened",
+    sentAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1.9 * 60 * 60 * 1000).toISOString()
+  }
+];
+
 const defaultCampaignsMock: Campaign[] = [
   {
     _id: "mock_camp_1",
@@ -439,6 +482,23 @@ const defaultCampaignsMock: Campaign[] = [
     failedCount: 0,
     convertedCount: 1,
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "mock_camp_2",
+    name: "Coffee Winback Promotion",
+    description: "Re-engage coffee buyers with a custom 15% discount code.",
+    channel: "WhatsApp",
+    audienceCriteria: { totalSpendMin: 300, specificProduct: "Coffee" },
+    audienceSize: 2,
+    status: "Running",
+    messageTemplate: "Hi [Name]! We noticed you loved [Product] and have spent a total of [Total Spend] with us. Get 15% off your next purchase using code WINBACK15.",
+    sentCount: 2,
+    deliveredCount: 2,
+    openedCount: 2,
+    clickedCount: 1,
+    failedCount: 0,
+    convertedCount: 0,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
   }
 ];
 
@@ -660,7 +720,7 @@ const getMockStore = () => {
   const getCustomersList = (): Customer[] => getOrInit('xeno_customers', defaultCustomersMock);
   const getSegmentsList = (): Segment[] => getOrInit('xeno_segments', defaultSegmentsMock);
   const getCampaignsList = (): Campaign[] => getOrInit('xeno_campaigns', defaultCampaignsMock);
-  const getLogsList = (): CampaignLog[] => getOrInit('xeno_logs', []);
+  const getLogsList = (): CampaignLog[] => getOrInit('xeno_logs', defaultLogsMock);
 
   const saveCustomers = (list: Customer[]) => localStorage.setItem('xeno_customers', JSON.stringify(list));
   const saveSegments = (list: Segment[]) => localStorage.setItem('xeno_segments', JSON.stringify(list));
@@ -682,7 +742,7 @@ const getMockStore = () => {
       localStorage.setItem('xeno_customers', JSON.stringify(defaultCustomersMock));
       localStorage.setItem('xeno_segments', JSON.stringify(defaultSegmentsMock));
       localStorage.setItem('xeno_campaigns', JSON.stringify(defaultCampaignsMock));
-      localStorage.setItem('xeno_logs', JSON.stringify([]));
+      localStorage.setItem('xeno_logs', JSON.stringify(defaultLogsMock));
       return { message: 'Local storage reset to default mock values.' };
     },
 
