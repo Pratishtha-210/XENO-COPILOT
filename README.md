@@ -18,6 +18,68 @@ An AI-native Marketing Engagement CRM and Shopper Segmentation platform built fo
 
 ---
 
+## 🏗️ Technical Architecture & System Design
+
+```mermaid
+graph TD
+    subgraph "Frontend Layer"
+        UI["Next.js 16 Web Client<br/>(Vercel App)"]
+        Sandbox["Local Storage Database<br/>(Self-Healing Sandbox Fallback)"]
+        UI -.->|Active if CRM offline| Sandbox
+    end
+
+    subgraph "Core Backend Services"
+        Core["Express CRM Core Service<br/>(TypeScript - Port 5000)"]
+        AI["Gemini 1.5 Flash SDK<br/>(Intent Parsing / Copy Template)"]
+        Heuristics["Local Regex Parser<br/>(API Key Fallback)"]
+        Core --- AI
+        AI -.->|Active if Key missing| Heuristics
+    end
+
+    subgraph "Database & Storage Layer"
+        Mongo[("MongoDB Collection<br/>(Mongoose Adapter)")]
+        JSONDB[("datastore.json File<br/>(Local DB Fallback)")]
+        Core --- Mongo
+        Mongo -.->|Active if Mongo offline| JSONDB
+    end
+
+    subgraph "Gateway & Broker Layer"
+        Sim["Channel Simulator Service<br/>(Node.js - Port 5001)"]
+    end
+
+    UI ===>|REST API Queries| Core
+    Core ===>|Asynchronous Batch Payload| Sim
+    Sim ===>|Delayed Webhook Callbacks| Core
+
+    style UI fill:#a78bfa,stroke:#7c3aed,stroke-width:2px,color:#fff
+    style Sandbox fill:#f472b6,stroke:#db2777,stroke-width:1px,color:#fff
+    style Core fill:#818cf8,stroke:#4f46e5,stroke-width:2px,color:#fff
+    style Sim fill:#60a5fa,stroke:#2563eb,stroke-width:2px,color:#fff
+    style Mongo fill:#34d399,stroke:#059669,stroke-width:2px,color:#fff
+    style JSONDB fill:#fbbf24,stroke:#d97706,stroke-width:1px,color:#fff
+```
+
+### 🧠 Major Architecture Decisions & Reasoning
+
+1. **Asynchronous Callback Webhook Loop**
+   * *The Decision*: Triggering campaign sends calls the Channel Service with a batch payload, which instantly returns a `202 Accepted` receipt. The simulator then posts status callbacks (sent $\rightarrow$ delivered $\rightarrow$ opened $\rightarrow$ clicked) back to the CRM Core's receipt API.
+   * *The Reasoning*: Real channel brokers (like Twilio, SendGrid, or Gupshup) process deliveries asynchronously over network towers. Freeing the CRM Core's main execution thread immediately prevents campaign dispatches from blocking or timing out web clients.
+
+2. **Decoupled Service Boundary**
+   * *The Decision*: Split the platform into two independent servers: `crm-core` and the `channel` simulator.
+   * *The Reasoning*: Separates high-frequency message transport operations (delayed event loops, delivery retries) from transactional customer and campaign management. This ensures spikes in messaging traffic do not throttle or crash core customer APIs.
+
+3. **Dual-Engine Repository Bridge**
+   * *The Decision*: Build a repository facade that queries MongoDB via Mongoose, but transparently falls back to local JSON filesystem files (`datastore.json`) if MongoDB connection timeouts occur.
+   * *The Reasoning*: Minimizes friction for developers and evaluators by guaranteeing a **zero-setup runtime**. The backend runs successfully out-of-the-box even without a local MongoDB installation.
+
+4. **Self-Healing Local Storage Sandbox**
+   * *The Decision*: Equip the Next.js frontend with a client-side localStorage mock database sandbox (v4 version-controlled) that automatically triggers if the backend server is unreachable.
+   * *The Reasoning*: Ensures the application is fully interactive and functional when hosted on serverless platforms (like Vercel) even when the Node services are offline.
+
+---
+
+
 ## 🛠️ Technology Stack
 
 *   **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS v4, Lucide Icons, Custom SVG charts.
