@@ -757,6 +757,15 @@ const getMockStore = () => {
     localStorage.setItem('xeno_logs', JSON.stringify(defaultLogsMock));
   };
 
+  // Upgrade local storage mock database version to sync defaults
+  const CURRENT_MOCK_VERSION = 'v4';
+  const storedVersion = localStorage.getItem('xeno_mock_store_version');
+  if (storedVersion !== CURRENT_MOCK_VERSION) {
+    localStorage.setItem('xeno_mock_store_version', CURRENT_MOCK_VERSION);
+    resetLocalStoreToDefaults();
+    console.log("[Mock Store] Local storage initialized/upgraded to version " + CURRENT_MOCK_VERSION);
+  }
+
   const getCustomersList = (): Customer[] => getOrInit('xeno_customers', defaultCustomersMock);
   const getSegmentsList = (): Segment[] => getOrInit('xeno_segments', defaultSegmentsMock);
   const getCampaignsList = (): Campaign[] => getOrInit('xeno_campaigns', defaultCampaignsMock);
