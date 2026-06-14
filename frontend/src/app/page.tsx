@@ -851,8 +851,8 @@ export default function Home() {
         </div>
 
         {/* Database Status Widget */}
-        <div className="bg-white/[0.02] border border-sidebar-border p-3.5 rounded-lg">
-          <div className="flex items-center justify-between mb-1.5">
+        <div className="bg-white/[0.02] border border-sidebar-border p-3.5 rounded-lg space-y-2">
+          <div className="flex items-center justify-between mb-0.5">
             <span className="text-[10px] text-gray-500 font-bold uppercase">Database Engine</span>
             <div className="flex items-center gap-1.5">
               <span className={`w-1.5 h-1.5 rounded-full ${
@@ -874,6 +874,32 @@ export default function Home() {
               ? 'Analyzing connection to CRM backend...'
               : 'MongoDB local server offline. Local JSONDB active.'
             }
+          </div>
+          
+          {/* Custom Backend URL Override */}
+          <div className="pt-2 border-t border-white/[0.04]">
+            <button
+              onClick={() => {
+                const current = localStorage.getItem('xeno_custom_backend_url') || 'http://localhost:5000/api';
+                const input = prompt("Enter CRM backend API URL to override connection (e.g. your laptop's local network IP, like http://192.168.1.7:5000/api):", current);
+                if (input !== null) {
+                  if (input.trim() === '') {
+                    localStorage.removeItem('xeno_custom_backend_url');
+                  } else {
+                    localStorage.setItem('xeno_custom_backend_url', input.trim());
+                  }
+                  window.location.reload();
+                }
+              }}
+              className="text-[9px] text-accent-violet hover:text-accent-violet/85 font-black uppercase tracking-wider flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0 focus:outline-none transition-colors"
+            >
+              ⚙️ Override API Address
+            </button>
+            {typeof window !== 'undefined' && localStorage.getItem('xeno_custom_backend_url') && (
+              <div className="text-[8px] text-gray-400 mt-1 break-all bg-black/20 p-1 rounded font-mono">
+                IP: {localStorage.getItem('xeno_custom_backend_url')}
+              </div>
+            )}
           </div>
         </div>
       </aside>
