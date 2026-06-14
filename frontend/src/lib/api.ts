@@ -585,10 +585,23 @@ const runMockSimulation = (campaignId: string, matchedCustomers: Customer[], tem
     campaignId,
     customerId: cust._id,
     recipientDetails: { name: cust.name, email: cust.email, phone: cust.phone },
-    customMessage: template
-      .replace('[Name]', cust.name)
-      .replace('[Total Spend]', `₹${cust.totalSpend}`)
-      .replace('[Product]', cust.orders?.[0]?.itemBought || 'items'),
+    customMessage: (() => {
+      let msg = template
+        .replace(/\[Name\]/gi, cust.name)
+        .replace(/\{\{name\}\}/gi, cust.name)
+        .replace(/\[Total Spend\]/gi, `₹${cust.totalSpend}`)
+        .replace(/\{\{totalSpend\}\}/gi, cust.totalSpend.toString())
+        .replace(/\[Product\]/gi, cust.orders?.[0]?.itemBought || 'items')
+        .replace(/\{\{lastProduct\}\}/gi, cust.orders?.[0]?.itemBought || 'items');
+      
+      let inactiveDays = 15;
+      if (cust.lastOrderDate) {
+        const diffTime = Math.abs(new Date().getTime() - new Date(cust.lastOrderDate).getTime());
+        inactiveDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+      msg = msg.replace(/\{\{inactiveDays\}\}/gi, inactiveDays.toString());
+      return msg;
+    })(),
     status: 'sent',
     sentAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

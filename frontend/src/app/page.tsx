@@ -368,6 +368,24 @@ export default function Home() {
   const [inboxTab, setInboxTab] = useState<'whatsapp' | 'email'>('whatsapp');
   const [inboxLogs, setInboxLogs] = useState<CampaignLog[]>([]);
 
+  // Filter simulator logs by tab channel
+  const getFilteredInboxLogs = (tab: 'whatsapp' | 'email') => {
+    return inboxLogs.filter(log => {
+      const camp = campaigns.find(c => c._id === log.campaignId);
+      if (!camp) {
+        // Fallback: Check if message has "Subject:" or "Subject" line at the beginning
+        const hasSubject = log.customMessage.toLowerCase().includes('subject:');
+        return tab === 'email' ? hasSubject : !hasSubject;
+      }
+      const channel = camp.channel.toLowerCase();
+      if (tab === 'whatsapp') {
+        return channel === 'whatsapp' || channel === 'sms' || channel === 'rcs';
+      } else {
+        return channel === 'email';
+      }
+    });
+  };
+
   // Load logs for Message Simulator
   useEffect(() => {
     if (!selectedInboxCustomer) {
@@ -2191,7 +2209,7 @@ export default function Home() {
                               
                               {/* Chat history list */}
                               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3.5 scrollbar-thin">
-                                {inboxLogs.filter(l => l.status !== 'failed').length === 0 ? (
+                                {getFilteredInboxLogs('whatsapp').filter(l => l.status !== 'failed').length === 0 ? (
                                   <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                                     <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
                                       <MessageSquare className="w-6 h-6 text-text-tertiary" />
@@ -2202,7 +2220,7 @@ export default function Home() {
                                     </p>
                                   </div>
                                 ) : (
-                                  inboxLogs
+                                  getFilteredInboxLogs('whatsapp')
                                     .filter(l => l.status !== 'failed')
                                     .map((log) => (
                                       <div key={log._id} className="flex flex-col max-w-[85%] self-end">
@@ -2248,12 +2266,12 @@ export default function Home() {
                               </h3>
                               
                               <div className="flex-1 flex flex-col gap-4.5 mt-4">
-                                {inboxLogs.length === 0 ? (
+                                {getFilteredInboxLogs('whatsapp').length === 0 ? (
                                   <p className="text-[10px] text-text-tertiary leading-normal">
                                     No active simulation available. Send a campaign targeting {selectedInboxCustomer.name} to start simulating the lifecycle.
                                   </p>
                                 ) : (
-                                  inboxLogs.map((log) => {
+                                  getFilteredInboxLogs('whatsapp').map((log) => {
                                     return (
                                       <div key={log._id} className="p-3 bg-white/[0.02] border border-card-border rounded-lg flex flex-col gap-2">
                                         <div className="text-[10px] font-bold text-text-primary truncate">
@@ -2331,7 +2349,7 @@ export default function Home() {
                         {inboxTab === 'email' && (
                           <div className="flex-1 flex overflow-hidden">
                             <div className="flex-1 flex flex-col bg-white/[0.01] overflow-hidden">
-                              {inboxLogs.filter(l => l.status !== 'failed').length === 0 ? (
+                               {getFilteredInboxLogs('email').filter(l => l.status !== 'failed').length === 0 ? (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                                   <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
                                     <Mail className="w-6 h-6 text-text-tertiary" />
@@ -2343,7 +2361,7 @@ export default function Home() {
                                 </div>
                               ) : (
                                 <div className="flex-1 flex flex-col overflow-y-auto p-5 gap-5">
-                                  {inboxLogs
+                                  {getFilteredInboxLogs('email')
                                     .filter(l => l.status !== 'failed')
                                     .map((log) => {
                                       const lines = log.customMessage.split('\n');

@@ -338,6 +338,10 @@ class JSONStore {
           camp[metric] = (camp[metric] || 0) + 1;
           this.save();
         }
+      },
+      clear: async () => {
+        this.data.campaigns = [];
+        this.save();
       }
     };
   }
@@ -375,6 +379,10 @@ class JSONStore {
         log.updatedAt = new Date().toISOString();
         this.save();
         return log;
+      },
+      clear: async () => {
+        this.data.campaignLogs = [];
+        this.save();
       }
     };
   }
@@ -510,6 +518,13 @@ export const db = {
       } else {
         await localStore.campaigns.incrementMetric(id, metric);
       }
+    },
+    clear: async (): Promise<void> => {
+      if (isConnectedToMongo) {
+        await CampaignModel.deleteMany({});
+      } else {
+        await localStore.campaigns.clear();
+      }
     }
   },
 
@@ -537,6 +552,13 @@ export const db = {
         ).lean();
       }
       return await localStore.campaignLogs.updateStatus(campaignId, customerId, status);
+    },
+    clear: async (): Promise<void> => {
+      if (isConnectedToMongo && CampaignLogModel) {
+        await CampaignLogModel.deleteMany({});
+      } else {
+        await localStore.campaignLogs.clear();
+      }
     }
   }
 };
@@ -549,33 +571,30 @@ async function proactiveSeed() {
     
     console.log('🌱 [DB] Customer database is empty. Proactively seeding mock customers to prevent empty segments...');
     
-    // 15 customers seeded with specific city distributions to match Screenshot 1 top cities
-    // Cities: Bangalore (5), Hyderabad (3.5/4), Lucknow (3), Chandigarh (3), Delhi (3)
     const seedData = [
-      { name: 'Rahul Sharma', email: 'rahul.sharma@example.com', phone: '+919876543210', city: 'Bangalore', lastOrderDays: 45, orders: [{ item: 'Cappuccino', price: 250 }, { item: 'Chocolate Muffin', price: 180 }] },
-      { name: 'Priya Patel', email: 'priya.patel@example.com', phone: '+919123456789', city: 'Hyderabad', lastOrderDays: 1, orders: [{ item: 'Cold Brew Coffee', price: 220 }, { item: 'Avocado Toast', price: 350 }] },
-      { name: 'Aman Verma', email: 'aman.verma@example.com', phone: '+918888888888', city: 'Lucknow', lastOrderDays: 50, orders: [{ item: 'Air Jordan Sneakers', price: 9500 }] },
-      { name: 'Sneha Reddy', email: 'sneha.reddy@example.com', phone: '+917777777777', city: 'Chandigarh', lastOrderDays: 12, orders: [{ item: 'Latte', price: 280 }] },
-      { name: 'Vikram Singh', email: 'vikram.singh@example.com', phone: '+919999999999', city: 'Delhi', lastOrderDays: 90, orders: [{ item: 'Nike Pegasus Running Shoes', price: 7500 }] },
+      { _id: '6a2c1dea5c02c79f78f35416', name: 'Rahul Sharma', email: 'rahul.sharma@example.com', phone: '+919876543210', city: 'Bangalore', lastOrderDays: 45, orders: [{ item: 'Cappuccino', price: 250 }, { item: 'Chocolate Muffin', price: 180 }] },
+      { _id: '6a2c1dea5c02c79f78f35419', name: 'Priya Patel', email: 'priya.patel@example.com', phone: '+919123456789', city: 'Hyderabad', lastOrderDays: 1, orders: [{ item: 'Cold Brew Coffee', price: 220 }, { item: 'Avocado Toast', price: 350 }] },
+      { _id: '6a2c1dea5c02c79f78f3541c', name: 'Aman Verma', email: 'aman.verma@example.com', phone: '+918888888888', city: 'Lucknow', lastOrderDays: 50, orders: [{ item: 'Air Jordan Sneakers', price: 9500 }] },
+      { _id: '6a2c1dea5c02c79f78f3541e', name: 'Sneha Reddy', email: 'sneha.reddy@example.com', phone: '+917777777777', city: 'Chandigarh', lastOrderDays: 12, orders: [{ item: 'Latte', price: 280 }] },
+      { _id: '6a2c1dea5c02c79f78f35420', name: 'Vikram Singh', email: 'vikram.singh@example.com', phone: '+919999999999', city: 'Delhi', lastOrderDays: 90, orders: [{ item: 'Nike Pegasus Running Shoes', price: 7500 }] },
       
-      { name: 'Ananya Sen', email: 'ananya.sen@example.com', phone: '+919444455555', city: 'Bangalore', lastOrderDays: 3, orders: [{ item: 'Espresso Macchiato', price: 210 }, { item: 'Croissant', price: 150 }] },
-      { name: 'Rohan Gupta', email: 'rohan.gupta@example.com', phone: '+918222233333', city: 'Hyderabad', lastOrderDays: 32, orders: [{ item: 'Adidas Ultraboost Sneakers', price: 8900 }] },
-      { name: 'Meera Joshi', email: 'meera.joshi@example.com', phone: '+919111122222', city: 'Lucknow', lastOrderDays: 15, orders: [{ item: 'Filter Coffee', price: 120 }, { item: 'Paneer Puff', price: 80 }] },
-      { name: 'Kabir Malhotra', email: 'kabir.m@example.com', phone: '+919555566666', city: 'Chandigarh', lastOrderDays: 60, orders: [{ item: 'Iced Latte', price: 260 }] },
-      { name: 'Zara Khan', email: 'zara.khan@example.com', phone: '+919666677777', city: 'Delhi', lastOrderDays: 2, orders: [{ item: 'Puma Suede Sneakers', price: 4500 }] },
+      { _id: '6a2c1dea5c02c79f78f35422', name: 'Ananya Sen', email: 'ananya.sen@example.com', phone: '+919444455555', city: 'Bangalore', lastOrderDays: 3, orders: [{ item: 'Espresso Macchiato', price: 210 }, { item: 'Croissant', price: 150 }] },
+      { _id: '6a2c1dea5c02c79f78f35425', name: 'Rohan Gupta', email: 'rohan.gupta@example.com', phone: '+918222233333', city: 'Hyderabad', lastOrderDays: 32, orders: [{ item: 'Adidas Ultrboost Sneakers', price: 8900 }] },
+      { _id: '6a2c1dea5c02c79f78f35427', name: 'Meera Joshi', email: 'meera.joshi@example.com', phone: '+919111122222', city: 'Lucknow', lastOrderDays: 15, orders: [{ item: 'Filter Coffee', price: 120 }, { item: 'Paneer Puff', price: 80 }] },
+      { _id: '6a2c1dea5c02c79f78f3542a', name: 'Kabir Malhotra', email: 'kabir.m@example.com', phone: '+919555566666', city: 'Chandigarh', lastOrderDays: 60, orders: [{ item: 'Iced Latte', price: 260 }] },
+      { _id: '6a2c1dea5c02c79f78f3542c', name: 'Zara Khan', email: 'zara.khan@example.com', phone: '+919666677777', city: 'Delhi', lastOrderDays: 2, orders: [{ item: 'Puma Suede Sneakers', price: 4500 }] },
       
-      { name: 'Aditya Rao', email: 'aditya.rao@example.com', phone: '+919777788888', city: 'Bangalore', lastOrderDays: 25, orders: [{ item: 'Cappuccino', price: 250 }] },
-      { name: 'Divya Nair', email: 'divya.nair@example.com', phone: '+919888899999', city: 'Hyderabad', lastOrderDays: 120, orders: [{ item: 'Cold Brew Coffee', price: 220 }] },
-      { name: 'Siddharth Roy', email: 'sid.roy@example.com', phone: '+919000011111', city: 'Lucknow', lastOrderDays: 5, orders: [{ item: 'Nike Pegasus Running Shoes', price: 7500 }, { item: 'Socks Pack', price: 600 }] },
-      { name: 'Tanvi Shah', email: 'tanvi.shah@example.com', phone: '+919111133333', city: 'Chandigarh', lastOrderDays: 70, orders: [{ item: 'Latte', price: 280 }] },
-      { name: 'Varun Das', email: 'varun.das@example.com', phone: '+919222244444', city: 'Delhi', lastOrderDays: 8, orders: [{ item: 'Filter Coffee', price: 120 }] },
+      { _id: '6a2c1dea5c02c79f78f3542e', name: 'Aditya Rao', email: 'aditya.rao@example.com', phone: '+919777788888', city: 'Bangalore', lastOrderDays: 25, orders: [{ item: 'Cappuccino', price: 250 }] },
+      { _id: '6a2c1dea5c02c79f78f35430', name: 'Divya Nair', email: 'divya.nair@example.com', phone: '+919888899999', city: 'Hyderabad', lastOrderDays: 120, orders: [{ item: 'Cold Brew Coffee', price: 220 }] },
+      { _id: '6a2c1dea5c02c79f78f35432', name: 'Siddharth Roy', email: 'sid.roy@example.com', phone: '+919000011111', city: 'Lucknow', lastOrderDays: 5, orders: [{ item: 'Nike Pegasus Running Shoes', price: 7500 }, { item: 'Socks Pack', price: 600 }] },
+      { _id: '6a2c1dea5c02c79f78f35435', name: 'Tanvi Shah', email: 'tanvi.shah@example.com', phone: '+919111133333', city: 'Chandigarh', lastOrderDays: 70, orders: [{ item: 'Latte', price: 280 }] },
+      { _id: '6a2c1dea5c02c79f78f35437', name: 'Varun Das', email: 'varun.das@example.com', phone: '+919222244444', city: 'Delhi', lastOrderDays: 8, orders: [{ item: 'Filter Coffee', price: 120 }] },
 
-      // Add extra to make Bangalore city count = 24 scale, and total customers look substantial
-      { name: 'Karthik Raja', email: 'karthik.r@example.com', phone: '+919000122222', city: 'Bangalore', lastOrderDays: 10, orders: [{ item: 'Latte', price: 280 }] },
-      { name: 'Megha Rao', email: 'megha.r@example.com', phone: '+919000133333', city: 'Bangalore', lastOrderDays: 4, orders: [{ item: 'Espresso', price: 180 }] },
-      { name: 'Suresh Kumar', email: 'suresh.k@example.com', phone: '+919000144444', city: 'Bangalore', lastOrderDays: 20, orders: [{ item: 'Filter Coffee', price: 120 }] },
-      { name: 'Lata Mangesh', email: 'lata.m@example.com', phone: '+919000155555', city: 'Hyderabad', lastOrderDays: 33, orders: [{ item: 'Cappuccino', price: 250 }] },
-      { name: 'Harish Kalyan', email: 'harish.k@example.com', phone: '+919000166666', city: 'Delhi', lastOrderDays: 4, orders: [{ item: 'Cold Brew Coffee', price: 220 }] }
+      { _id: '6a2c1dea5c02c79f78f35439', name: 'Karthik Raja', email: 'karthik.r@example.com', phone: '+919000122222', city: 'Bangalore', lastOrderDays: 10, orders: [{ item: 'Latte', price: 280 }] },
+      { _id: '6a2c1dea5c02c79f78f3543b', name: 'Megha Rao', email: 'megha.r@example.com', phone: '+919000133333', city: 'Bangalore', lastOrderDays: 4, orders: [{ item: 'Espresso', price: 180 }] },
+      { _id: '6a2c1dea5c02c79f78f3543d', name: 'Suresh Kumar', email: 'suresh.k@example.com', phone: '+919000144444', city: 'Bangalore', lastOrderDays: 20, orders: [{ item: 'Filter Coffee', price: 120 }] },
+      { _id: '6a2c1dea5c02c79f78f3543f', name: 'Lata Mangesh', email: 'lata.m@example.com', phone: '+919000155555', city: 'Hyderabad', lastOrderDays: 33, orders: [{ item: 'Cappuccino', price: 250 }] },
+      { _id: '6a2c1dea5c02c79f78f35441', name: 'Harish Kalyan', email: 'harish.k@example.com', phone: '+919000166666', city: 'Delhi', lastOrderDays: 4, orders: [{ item: 'Cold Brew Coffee', price: 220 }] }
     ];
     
     const now = new Date();
@@ -587,6 +606,7 @@ async function proactiveSeed() {
 
     for (const item of seedData) {
       const cust = await db.customers.create({
+        _id: item._id,
         name: item.name,
         email: item.email,
         phone: item.phone,
@@ -622,7 +642,90 @@ async function proactiveSeed() {
       audienceSize: 3
     });
 
-    console.log('✅ [DB] Proactive database seeding completed. 20 profiles and 2 segments loaded.');
+    // Clear and seed campaigns
+    await db.campaigns.clear();
+    await db.campaigns.create({
+      _id: '6a2c3a785c02c79f78f3544b',
+      name: 'Premium Sneaker VIP Launch 👟',
+      description: 'Re-engaging premium fashion consumers via visually rich email marketing showcasing sneaker stock updates.',
+      channel: 'Email',
+      audienceCriteria: { specificProduct: 'Sneakers', totalSpendMin: 5000 },
+      audienceSize: 3,
+      status: 'Completed',
+      messageTemplate: 'Subject: Exclusive 15% VIP Discount on Sneakers! 👟\n\nDear {{name}},\n\nYour shoe game deserves the best. We noticed you previously bought {{lastProduct}} from Xeno. We just restocked some premium sneakers and wanted to offer you an exclusive 15% off.\n\nUse code SNEAKER15 to upgrade your style. Total spend to date: ₹{{totalSpend}}.',
+      sentCount: 3,
+      deliveredCount: 3,
+      openedCount: 2,
+      clickedCount: 1,
+      failedCount: 0,
+      convertedCount: 1
+    });
+
+    await db.campaigns.create({
+      _id: '6a2c1e785c02c79f78f35445',
+      name: 'Coffee Lovers Re-activation ☕',
+      description: 'Targeting previous coffee customers with high open-rate WhatsApp channels to drive instant caffeine craving re-activation.',
+      channel: 'WhatsApp',
+      audienceCriteria: { specificProduct: 'Coffee', totalSpendMin: 500 },
+      audienceSize: 2,
+      status: 'Completed',
+      messageTemplate: 'Hey {{name}}! ☕ We noticed it has been {{inactiveDays}} days since your last order of {{lastProduct}}! We miss brewing for you. Here is a flat 20% discount on your next visit. Use code BREW20 at checkout! Let us catch up soon!',
+      sentCount: 2,
+      deliveredCount: 2,
+      openedCount: 2,
+      clickedCount: 1,
+      failedCount: 0,
+      convertedCount: 0
+    });
+
+    // Clear and seed campaign logs
+    await db.campaignLogs.clear();
+    
+    // Aman Verma sneaker log (Email) - Converted
+    await db.campaignLogs.create({
+      campaignId: '6a2c3a785c02c79f78f3544b',
+      customerId: '6a2c1dea5c02c79f78f3541c',
+      recipientDetails: { name: 'Aman Verma', email: 'aman.verma@example.com', phone: '+918888888888' },
+      customMessage: 'Subject: Exclusive 15% VIP Discount on Sneakers! 👟\n\nDear Aman Verma,\n\nYour shoe game deserves the best. We noticed you previously bought Air Jordan Sneakers from Xeno. We just restocked some premium sneakers and wanted to offer you an exclusive 15% off.\n\nUse code SNEAKER15 to upgrade your style. Total spend to date: ₹9500.',
+      status: 'converted',
+      sentAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString()
+    });
+
+    // Rohan Gupta sneaker log (Email) - Opened
+    await db.campaignLogs.create({
+      campaignId: '6a2c3a785c02c79f78f3544b',
+      customerId: '6a2c1dea5c02c79f78f35425',
+      recipientDetails: { name: 'Rohan Gupta', email: 'rohan.gupta@example.com', phone: '+918222233333' },
+      customMessage: 'Subject: Exclusive 15% VIP Discount on Sneakers! 👟\n\nDear Rohan Gupta,\n\nYour shoe game deserves the best. We noticed you previously bought Adidas Ultraboost Sneakers from Xeno. We just restocked some premium sneakers and wanted to offer you an exclusive 15% off.\n\nUse code SNEAKER15 to upgrade your style. Total spend to date: ₹8900.',
+      status: 'opened',
+      sentAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    });
+
+    // Zara Khan sneaker log (Email) - Delivered
+    await db.campaignLogs.create({
+      campaignId: '6a2c3a785c02c79f78f3544b',
+      customerId: '6a2c1dea5c02c79f78f3542c',
+      recipientDetails: { name: 'Zara Khan', email: 'zara.khan@example.com', phone: '+919666677777' },
+      customMessage: 'Subject: Exclusive 15% VIP Discount on Sneakers! 👟\n\nDear Zara Khan,\n\nYour shoe game deserves the best. We noticed you previously bought Puma Suede Sneakers from Xeno. We just restocked some premium sneakers and wanted to offer you an exclusive 15% off.\n\nUse code SNEAKER15 to upgrade your style. Total spend to date: ₹4500.',
+      status: 'delivered',
+      sentAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    });
+
+    // Divya Nair coffee log (WhatsApp) - Clicked
+    await db.campaignLogs.create({
+      campaignId: '6a2c1e785c02c79f78f35445',
+      customerId: '6a2c1dea5c02c79f78f35430',
+      recipientDetails: { name: 'Divya Nair', email: 'divya.nair@example.com', phone: '+919888899999' },
+      customMessage: 'Hey Divya Nair! ☕ We noticed it has been 120 days since your last order of Cold Brew Coffee! We miss brewing for you. Here is a flat 20% discount on your next visit. Use code BREW20 at checkout! Let us catch up soon!',
+      status: 'clicked',
+      sentAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date(Date.now() - 1.8 * 60 * 60 * 1000).toISOString()
+    });
+
+    console.log('✅ [DB] Proactive database seeding completed. 20 profiles, 2 segments, 2 campaigns, and 4 logs loaded.');
   } catch (err: any) {
     console.error('❌ [DB] Proactive seeding failed:', err.message);
   }
