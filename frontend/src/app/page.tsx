@@ -27,7 +27,8 @@ import {
   Trash2,
   FileText,
   MoreVertical,
-  ShoppingBag
+  ShoppingBag,
+  Menu
 } from 'lucide-react';
 import { api, Customer, Campaign, CampaignLog, DashboardAnalytics, Segment } from '../lib/api';
 
@@ -369,6 +370,7 @@ export default function Home() {
   const [inboxTab, setInboxTab] = useState<'whatsapp' | 'email'>('whatsapp');
   const [inboxLogs, setInboxLogs] = useState<CampaignLog[]>([]);
   const [mobileShowList, setMobileShowList] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Filter simulator logs by tab channel
   const getFilteredInboxLogs = (tab: 'whatsapp' | 'email') => {
@@ -779,8 +781,16 @@ export default function Home() {
       <div className="glowing-orb orb-violet" />
       <div className="glowing-orb orb-indigo" />
       
+      {/* Mobile Sidebar Backdrop */}
+      {mobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden animate-fade-in"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+      
       {/* SIDEBAR */}
-      <aside className="w-64 border-r border-sidebar-border bg-sidebar-bg flex flex-col justify-between p-6 animate-slide-in-left z-10">
+      <aside className={`fixed inset-y-0 left-0 w-64 border-r border-sidebar-border bg-sidebar-bg flex flex-col justify-between p-6 z-40 transition-transform duration-300 lg:static lg:translate-x-0 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2.5">
@@ -796,7 +806,7 @@ export default function Home() {
                 </span>
               </div>
             </div>
-
+ 
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
@@ -806,10 +816,10 @@ export default function Home() {
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-violet-400" />}
             </button>
           </div>
-
+ 
           <nav className="space-y-1.5">
             <button
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => { setActiveTab('dashboard'); setMobileSidebarOpen(false); }}
               className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'dashboard'
                   ? 'bg-white/5 text-violet-400 border border-white/5'
@@ -819,9 +829,9 @@ export default function Home() {
               <LayoutDashboard className={`w-3.5 h-3.5 ${activeTab === 'dashboard' ? 'text-violet-400' : 'text-gray-400'}`} />
               Dashboard
             </button>
-
+ 
             <button
-              onClick={() => { setActiveTab('campaigns'); setSelectedCampaign(null); setShowCampaignBuilder(false); }}
+              onClick={() => { setActiveTab('campaigns'); setSelectedCampaign(null); setShowCampaignBuilder(false); setMobileSidebarOpen(false); }}
               className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'campaigns'
                   ? 'bg-white/5 text-violet-400 border border-white/5'
@@ -831,9 +841,9 @@ export default function Home() {
               <Megaphone className={`w-3.5 h-3.5 ${activeTab === 'campaigns' ? 'text-violet-400' : 'text-gray-400'}`} />
               Campaigns
             </button>
-
+ 
             <button
-              onClick={() => { setActiveTab('segments'); setShowSegmentBuilder(false); }}
+              onClick={() => { setActiveTab('segments'); setShowSegmentBuilder(false); setMobileSidebarOpen(false); }}
               className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'segments'
                   ? 'bg-white/5 text-violet-400 border border-white/5'
@@ -843,9 +853,9 @@ export default function Home() {
               <Target className={`w-3.5 h-3.5 ${activeTab === 'segments' ? 'text-violet-400' : 'text-gray-400'}`} />
               Segments
             </button>
-
+ 
             <button
-              onClick={() => setActiveTab('audience')}
+              onClick={() => { setActiveTab('audience'); setMobileSidebarOpen(false); }}
               className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'audience'
                   ? 'bg-white/5 text-violet-400 border border-white/5'
@@ -855,9 +865,9 @@ export default function Home() {
               <Users className={`w-3.5 h-3.5 ${activeTab === 'audience' ? 'text-violet-400' : 'text-gray-400'}`} />
               Audience Base
             </button>
-
+ 
             <button
-              onClick={() => setActiveTab('inbox')}
+              onClick={() => { setActiveTab('inbox'); setMobileSidebarOpen(false); }}
               className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'inbox'
                   ? 'bg-white/5 text-violet-400 border border-white/5'
@@ -926,6 +936,30 @@ export default function Home() {
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col overflow-hidden p-8 z-10 relative">
+        
+        {/* Mobile Header Bar */}
+        <div className="lg:hidden flex items-center justify-between pb-4 border-b border-card-border mb-5 shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="p-1.5 bg-white/5 border border-card-border rounded hover:bg-white/10 text-text-secondary hover:text-text-primary transition-all flex items-center justify-center cursor-pointer"
+              title="Open Navigation"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+            <span className="font-bold text-xs leading-tight tracking-wide bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent ml-1">
+              XENO COPILOT
+            </span>
+          </div>
+          
+          {/* Mobile Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 bg-white/5 hover:bg-white/10 rounded text-gray-400 hover:text-gray-200 transition-all cursor-pointer"
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
+          </button>
+        </div>
         
         {/* Alerts */}
         {globalError && (
@@ -2110,10 +2144,10 @@ export default function Home() {
                   </button>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-[500px]">
+                <div className="flex-1 flex flex-col xl:flex-row gap-6 overflow-hidden min-h-[500px]">
                   
                   {/* Left panel: Customer Selector */}
-                  <div className={`glass-panel w-full lg:w-80 flex flex-col overflow-hidden shrink-0 ${mobileShowList ? 'flex' : 'hidden lg:flex'}`}>
+                  <div className={`glass-panel w-full xl:w-80 flex flex-col overflow-hidden shrink-0 ${mobileShowList ? 'flex' : 'hidden xl:flex'}`}>
                     <div className="p-4 border-b border-card-border bg-black/10">
                       <div className="relative">
                         <Search className="w-3.5 h-3.5 text-text-tertiary absolute left-3 top-2.5" />
@@ -2161,7 +2195,7 @@ export default function Home() {
                   </div>
 
                   {/* Right panel: Simulator view */}
-                  <div className={`glass-panel flex-1 flex flex-col overflow-hidden ${!mobileShowList ? 'flex' : 'hidden lg:flex'}`}>
+                  <div className={`glass-panel flex-1 flex flex-col overflow-hidden ${!mobileShowList ? 'flex' : 'hidden xl:flex'}`}>
                     {selectedInboxCustomer ? (
                       <>
                         {/* Header Details */}
@@ -2171,7 +2205,7 @@ export default function Home() {
                               {/* Mobile Back Button */}
                               <button
                                 onClick={() => setMobileShowList(true)}
-                                className="lg:hidden p-1 bg-white/5 border border-card-border rounded hover:bg-white/10 text-text-secondary hover:text-text-primary transition-all flex items-center justify-center cursor-pointer mr-1.5"
+                                className="xl:hidden p-1 bg-white/5 border border-card-border rounded hover:bg-white/10 text-text-secondary hover:text-text-primary transition-all flex items-center justify-center cursor-pointer mr-1.5"
                                 title="Back to Inbox List"
                               >
                                 <ChevronLeft className="w-4 h-4" />
