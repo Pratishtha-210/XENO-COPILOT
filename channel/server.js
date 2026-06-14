@@ -1,17 +1,3 @@
-// ============================================================
-// ReachAI Channel Service - Simulated Message Delivery
-// ============================================================
-// This is a SEPARATE SERVICE from the CRM. It simulates what
-// a real channel provider (like Twilio, MSG91, Gupshup) does:
-//
-// 1. Receives messages from the CRM
-// 2. "Delivers" them (simulated)
-// 3. Calls back the CRM with status updates:
-//    sent → delivered → opened → clicked (or failed)
-//
-// The lifecycle simulation includes realistic delays and
-// failure rates to mimic real-world behavior.
-// ============================================================
 
 require('dotenv').config();
 const express = require('express');
