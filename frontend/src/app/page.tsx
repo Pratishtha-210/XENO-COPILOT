@@ -17,6 +17,7 @@ import {
   PhoneCall,
   Search,
   ChevronRight,
+  ChevronLeft,
   Sun,
   Moon,
   Megaphone,
@@ -367,6 +368,7 @@ export default function Home() {
   const [inboxSearchQuery, setInboxSearchQuery] = useState('');
   const [inboxTab, setInboxTab] = useState<'whatsapp' | 'email'>('whatsapp');
   const [inboxLogs, setInboxLogs] = useState<CampaignLog[]>([]);
+  const [mobileShowList, setMobileShowList] = useState(true);
 
   // Filter simulator logs by tab channel
   const getFilteredInboxLogs = (tab: 'whatsapp' | 'email') => {
@@ -2111,7 +2113,7 @@ export default function Home() {
                 <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-[500px]">
                   
                   {/* Left panel: Customer Selector */}
-                  <div className="glass-panel w-full lg:w-80 flex flex-col overflow-hidden shrink-0">
+                  <div className={`glass-panel w-full lg:w-80 flex flex-col overflow-hidden shrink-0 ${mobileShowList ? 'flex' : 'hidden lg:flex'}`}>
                     <div className="p-4 border-b border-card-border bg-black/10">
                       <div className="relative">
                         <Search className="w-3.5 h-3.5 text-text-tertiary absolute left-3 top-2.5" />
@@ -2135,7 +2137,7 @@ export default function Home() {
                           return (
                             <button
                               key={c._id}
-                              onClick={() => setSelectedInboxCustomer(c)}
+                              onClick={() => { setSelectedInboxCustomer(c); setMobileShowList(false); }}
                               className={`w-full p-4 flex items-center gap-3.5 text-left transition-all hover:bg-white/[0.02] cursor-pointer ${
                                 isSelected ? 'bg-white/5 border-l-3 border-accent-violet' : ''
                               }`}
@@ -2159,13 +2161,21 @@ export default function Home() {
                   </div>
 
                   {/* Right panel: Simulator view */}
-                  <div className="glass-panel flex-1 flex flex-col overflow-hidden">
+                  <div className={`glass-panel flex-1 flex flex-col overflow-hidden ${!mobileShowList ? 'flex' : 'hidden lg:flex'}`}>
                     {selectedInboxCustomer ? (
                       <>
                         {/* Header Details */}
                         <div className="p-4 border-b border-card-border flex flex-col md:flex-row md:items-center justify-between gap-4 bg-black/15">
                           <div>
                             <div className="text-sm font-bold text-text-primary flex items-center gap-2">
+                              {/* Mobile Back Button */}
+                              <button
+                                onClick={() => setMobileShowList(true)}
+                                className="lg:hidden p-1 bg-white/5 border border-card-border rounded hover:bg-white/10 text-text-secondary hover:text-text-primary transition-all flex items-center justify-center cursor-pointer mr-1.5"
+                                title="Back to Inbox List"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                              </button>
                               {selectedInboxCustomer.name}
                               <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded border border-card-border text-text-tertiary">
                                 {selectedInboxCustomer.city}
