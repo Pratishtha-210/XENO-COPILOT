@@ -730,10 +730,31 @@ const getMockStore = () => {
     return defaultData;
   };
 
+  const resetLocalStoreToDefaults = () => {
+    localStorage.setItem('xeno_customers', JSON.stringify(defaultCustomersMock));
+    localStorage.setItem('xeno_segments', JSON.stringify(defaultSegmentsMock));
+    localStorage.setItem('xeno_campaigns', JSON.stringify(defaultCampaignsMock));
+    localStorage.setItem('xeno_logs', JSON.stringify(defaultLogsMock));
+  };
+
   const getCustomersList = (): Customer[] => getOrInit('xeno_customers', defaultCustomersMock);
   const getSegmentsList = (): Segment[] => getOrInit('xeno_segments', defaultSegmentsMock);
   const getCampaignsList = (): Campaign[] => getOrInit('xeno_campaigns', defaultCampaignsMock);
-  const getLogsList = (): CampaignLog[] => getOrInit('xeno_logs', defaultLogsMock);
+  
+  const getLogsList = (): CampaignLog[] => {
+    const logs = getOrInit('xeno_logs', defaultLogsMock);
+    const customers = getCustomersList();
+    if (logs.length > 0 && customers.length > 0) {
+      const customerIds = new Set(customers.map(c => c._id));
+      const hasAnyMatch = logs.some((l: any) => customerIds.has(l.customerId));
+      if (!hasAnyMatch) {
+        console.warn("[Sandbox Self-Healing] Customer IDs and Campaign Log IDs are completely disjoint. Resetting local store to defaults.");
+        resetLocalStoreToDefaults();
+        return defaultLogsMock;
+      }
+    }
+    return logs;
+  };
 
   const saveCustomers = (list: Customer[]) => localStorage.setItem('xeno_customers', JSON.stringify(list));
   const saveSegments = (list: Segment[]) => localStorage.setItem('xeno_segments', JSON.stringify(list));
