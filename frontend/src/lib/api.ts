@@ -444,6 +444,16 @@ const defaultLogsMock: CampaignLog[] = [
     updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   },
   {
+    _id: "mock_log_sneaker_3",
+    campaignId: "mock_camp_1",
+    customerId: "mock_cust_12", // Rohan Gupta
+    recipientDetails: { name: "Rohan Gupta", email: "rohan.g@example.com", phone: "9111122222" },
+    customMessage: "Hey Rohan Gupta, get early access to our new Premium Sneakers collection! You spent a total of ₹11500 with us, so you are in our VIP tier.",
+    status: "opened",
+    sentAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 23.5 * 60 * 60 * 1000).toISOString()
+  },
+  {
     _id: "mock_log_coffee_1",
     campaignId: "mock_camp_2",
     customerId: "mock_cust_1", // Pratishtha Sharma
@@ -462,6 +472,16 @@ const defaultLogsMock: CampaignLog[] = [
     status: "opened",
     sentAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 1.9 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "mock_log_coffee_3",
+    campaignId: "mock_camp_2",
+    customerId: "mock_cust_7", // Zara Patel
+    recipientDetails: { name: "Zara Patel", email: "zara.patel@example.com", phone: "9666666666" },
+    customMessage: "Hi Zara Patel! We noticed you loved Leather Boots and have spent a total of ₹8200 with us. Get 15% off your next purchase using code WINBACK15.",
+    status: "clicked",
+    sentAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1.8 * 60 * 60 * 1000).toISOString()
   }
 ];
 

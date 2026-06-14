@@ -392,8 +392,8 @@ export default function Home() {
 
   // Load logs for Message Simulator
   useEffect(() => {
+    setInboxLogs([]); // Clear logs immediately on selected customer change to prevent stale display
     if (!selectedInboxCustomer) {
-      setInboxLogs([]);
       return;
     }
     const loadInboxLogs = async () => {
@@ -2284,7 +2284,7 @@ export default function Home() {
                                             {log.status === 'delivered' && (
                                               <span className="text-gray-400">✓✓</span>
                                             )}
-                                            {(log.status === 'opened' || log.status === 'clicked') && (
+                                            {(log.status === 'opened' || log.status === 'clicked' || log.status === 'converted') && (
                                               <span className="text-emerald-400 font-bold">✓✓</span>
                                             )}
                                           </div>
